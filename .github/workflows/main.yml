@@ -34,6 +34,3 @@ jobs:
     - name: Run dependency vulnerability check
       run: mvn org.owasp:dependency-check-maven:check
       continue-on-error: true
-      
-    - name: Update dependency graph
-      uses: advanced-security/maven-dependency-submission-action@v4
