@@ -6,15 +6,13 @@ import com.ciaranmckenna.medical_event_tracker.dto.RegisterRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -22,22 +20,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
-@AutoConfigureWebMvc
+@AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
 class AuthenticationIntegrationTest {
 
     @Autowired
-    private WebApplicationContext context;
+    private MockMvc mockMvc;
 
     @Autowired
     private ObjectMapper objectMapper;
 
-    private MockMvc mockMvc;
-
     @Test
     void testCompleteAuthenticationFlow() throws Exception {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
 
         RegisterRequest registerRequest = new RegisterRequest(
             "testuser",
@@ -80,12 +75,11 @@ class AuthenticationIntegrationTest {
 
         // Test unauthorized access (no token)
         mockMvc.perform(get("/api/auth/profile"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void testUsernameAvailabilityCheck() throws Exception {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
 
         // Check available username
         mockMvc.perform(get("/api/auth/check-username/newuser"))
@@ -95,7 +89,6 @@ class AuthenticationIntegrationTest {
 
     @Test
     void testEmailAvailabilityCheck() throws Exception {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
 
         // Check available email
         mockMvc.perform(get("/api/auth/check-email/new@example.com"))

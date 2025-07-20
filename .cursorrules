@@ -318,3 +318,4 @@ public class PatientController {
 2. Follow TDD principles - write tests before implementation.
 3. Make small, frequent commits with meaningful messages.
 4. Consider edge cases and medical data sensitivity in all implementations.
+5. Before finishing the work at hand, please run a mvn clean install to ensure that the build is successful.
