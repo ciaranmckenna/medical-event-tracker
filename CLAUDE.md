@@ -98,16 +98,70 @@ src/main/java/com/medicaltracker/
 - **Web Layer Tests:** `@WebMvcTest` with MockMvc
 - **Edge Cases:** Always test boundary conditions, null values, and invalid inputs
 
+### Branch Strategy & Workflow
+**IMPORTANT:** Always create a new feature branch for each development task or MVP stage component.
+
+#### Branch Types
+- **main:** Production-ready code only
+- **develop:** Integration branch for completed features  
+- **feature/MET-XXX:** New features (from tickets/stages)
+- **bugfix/MET-XXX:** Bug fixes
+- **hotfix/XXX:** Critical production fixes
+
+#### Workflow for Each Development Task
+1. **Start from develop branch:**
+   ```bash
+   git checkout develop
+   git pull origin develop
+   ```
+
+2. **Create feature branch with descriptive name:**
+   ```bash
+   # For MVP stages
+   git checkout -b feature/MET-XXX-patient-management
+   git checkout -b feature/MET-XXX-medication-tracking
+   
+   # For specific features  
+   git checkout -b feature/MET-XXX-jwt-authentication
+   git checkout -b feature/MET-XXX-user-registration
+   ```
+
+3. **Develop feature with TDD approach**
+
+4. **Commit regularly with meaningful messages**
+
+5. **Push feature branch and create PR to develop:**
+   ```bash
+   git push -u origin feature/MET-XXX-description
+   ```
+
+6. **After PR approval and merge, create new branch for next task:**
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git checkout -b feature/MET-XXX-next-feature
+   ```
+
+#### Branch Naming Convention
+- Use ticket numbers when available: `feature/MET-123-description`
+- For MVP stages: `feature/MET-XXX-stage-2-patient-mgmt`  
+- For bug fixes: `bugfix/MET-XXX-auth-validation`
+- Keep names descriptive but concise
+
 ### Git Commit Guidelines
 - Use present tense, imperative mood ("Add medication tracking" not "Added medication tracking")
 - Keep first line under 50 characters
-- Reference issue numbers when applicable
-- Structure: `type: brief description`
-  - `feat:` new features
-  - `fix:` bug fixes
-  - `test:` adding tests
-  - `refactor:` code restructuring
-  - `docs:` documentation updates
+- Reference issue numbers when applicable: "MET-XXX Add patient registration"
+- Structure: `MET-XXX Brief description`
+- Include detailed bullets for complex changes:
+  ```
+  MET-123 Add patient management system
+  
+  - Implement PatientController with CRUD operations
+  - Add Patient entity with proper validation
+  - Create PatientService with business logic
+  - Include comprehensive integration tests
+  ```
 
 ## Domain-Specific Guidelines
 

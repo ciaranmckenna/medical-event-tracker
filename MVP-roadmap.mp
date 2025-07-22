@@ -13,12 +13,14 @@ Establish the foundation with working user authentication
 - Create AuthController with registration and login endpoints
 - Implement JWT token generation and validation
 - Test basic authentication flow (register → login → get token)
+- Create comprehensive project documentation (README.md)
 
 **Deliverables:**
 - Working user registration endpoint
 - Working login endpoint returning JWT token
 - Password reset functionality
 - User profile management
+- Comprehensive project documentation with setup instructions
 
 ---
 
