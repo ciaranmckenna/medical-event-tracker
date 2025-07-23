@@ -1,0 +1,241 @@
+package com.ciaranmckenna.medical_event_tracker.controller;
+
+import com.ciaranmckenna.medical_event_tracker.dto.CreateMedicalEventRequest;
+import com.ciaranmckenna.medical_event_tracker.dto.MedicalEventResponse;
+import com.ciaranmckenna.medical_event_tracker.dto.UpdateMedicalEventRequest;
+import com.ciaranmckenna.medical_event_tracker.entity.MedicalEvent;
+import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventCategory;
+import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventSeverity;
+import com.ciaranmckenna.medical_event_tracker.exception.MedicalEventNotFoundException;
+import com.ciaranmckenna.medical_event_tracker.service.MedicalEventService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * REST controller for managing medical events.
+ * Provides CRUD operations and advanced querying for medical events.
+ */
+@RestController
+@RequestMapping("/api/medical-events")
+@PreAuthorize("hasRole('PRIMARY_USER') or hasRole('SECONDARY_USER') or hasRole('ADMIN')")
+public class MedicalEventController {
+
+    private final MedicalEventService medicalEventService;
+
+    public MedicalEventController(MedicalEventService medicalEventService) {
+        this.medicalEventService = medicalEventService;
+    }
+
+    /**
+     * Create a new medical event.
+     */
+    @PostMapping
+    @PreAuthorize("hasRole('PRIMARY_USER') or hasRole('ADMIN')")
+    public ResponseEntity<MedicalEventResponse> createMedicalEvent(
+            @Valid @RequestBody CreateMedicalEventRequest request) {
+        
+        MedicalEvent medicalEvent = mapToEntity(request);
+        MedicalEvent createdEvent = medicalEventService.createMedicalEvent(medicalEvent);
+        MedicalEventResponse response = mapToResponse(createdEvent);
+        
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    /**
+     * Get a medical event by ID.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<MedicalEventResponse> getMedicalEventById(@PathVariable UUID id) {
+        Optional<MedicalEvent> eventOpt = medicalEventService.getMedicalEventById(id);
+        
+        if (eventOpt.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        
+        MedicalEventResponse response = mapToResponse(eventOpt.get());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get all medical events for a specific patient.
+     */
+    @GetMapping("/patient/{patientId}")
+    public ResponseEntity<List<MedicalEventResponse>> getMedicalEventsByPatientId(
+            @PathVariable UUID patientId) {
+        
+        List<MedicalEvent> events = medicalEventService.getMedicalEventsByPatientId(patientId);
+        List<MedicalEventResponse> responses = events.stream()
+                .map(this::mapToResponse)
+                .toList();
+        
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Update an existing medical event.
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('PRIMARY_USER') or hasRole('ADMIN')")
+    public ResponseEntity<MedicalEventResponse> updateMedicalEvent(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateMedicalEventRequest request) {
+        
+        try {
+            MedicalEvent medicalEvent = mapToEntity(request);
+            MedicalEvent updatedEvent = medicalEventService.updateMedicalEvent(medicalEvent);
+            MedicalEventResponse response = mapToResponse(updatedEvent);
+            
+            return ResponseEntity.ok(response);
+        } catch (MedicalEventNotFoundException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    /**
+     * Delete a medical event.
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('PRIMARY_USER') or hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteMedicalEvent(@PathVariable UUID id) {
+        try {
+            medicalEventService.deleteMedicalEvent(id);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } catch (MedicalEventNotFoundException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    /**
+     * Get medical events for a patient within a date range.
+     */
+    @GetMapping("/patient/{patientId}/date-range")
+    public ResponseEntity<List<MedicalEventResponse>> getMedicalEventsByDateRange(
+            @PathVariable UUID patientId,
+            @RequestParam LocalDateTime startTime,
+            @RequestParam LocalDateTime endTime) {
+        
+        List<MedicalEvent> events = medicalEventService.getMedicalEventsByPatientIdAndDateRange(
+                patientId, startTime, endTime);
+        List<MedicalEventResponse> responses = events.stream()
+                .map(this::mapToResponse)
+                .toList();
+        
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Get medical events for a patient by category.
+     */
+    @GetMapping("/patient/{patientId}/category/{category}")
+    public ResponseEntity<List<MedicalEventResponse>> getMedicalEventsByCategory(
+            @PathVariable UUID patientId,
+            @PathVariable MedicalEventCategory category) {
+        
+        List<MedicalEvent> events = medicalEventService.getMedicalEventsByPatientIdAndCategory(
+                patientId, category);
+        List<MedicalEventResponse> responses = events.stream()
+                .map(this::mapToResponse)
+                .toList();
+        
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Get medical events for a patient by severity.
+     */
+    @GetMapping("/patient/{patientId}/severity/{severity}")
+    public ResponseEntity<List<MedicalEventResponse>> getMedicalEventsBySeverity(
+            @PathVariable UUID patientId,
+            @PathVariable MedicalEventSeverity severity) {
+        
+        List<MedicalEvent> events = medicalEventService.getMedicalEventsByPatientIdAndSeverity(
+                patientId, severity);
+        List<MedicalEventResponse> responses = events.stream()
+                .map(this::mapToResponse)
+                .toList();
+        
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Search medical events for a patient by text.
+     */
+    @GetMapping("/patient/{patientId}/search")
+    public ResponseEntity<List<MedicalEventResponse>> searchMedicalEvents(
+            @PathVariable UUID patientId,
+            @RequestParam String searchText) {
+        
+        List<MedicalEvent> events = medicalEventService.searchMedicalEventsByPatientId(
+                patientId, searchText);
+        List<MedicalEventResponse> responses = events.stream()
+                .map(this::mapToResponse)
+                .toList();
+        
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Get recent medical events for a patient.
+     */
+    @GetMapping("/patient/{patientId}/recent")
+    public ResponseEntity<List<MedicalEventResponse>> getRecentMedicalEvents(
+            @PathVariable UUID patientId,
+            @RequestParam(defaultValue = "7") int daysBack) {
+        
+        List<MedicalEvent> events = medicalEventService.getRecentMedicalEventsByPatientId(
+                patientId, daysBack);
+        List<MedicalEventResponse> responses = events.stream()
+                .map(this::mapToResponse)
+                .toList();
+        
+        return ResponseEntity.ok(responses);
+    }
+
+    private MedicalEvent mapToEntity(CreateMedicalEventRequest request) {
+        MedicalEvent event = new MedicalEvent();
+        event.setPatientId(request.patientId());
+        event.setMedicationId(request.medicationId());
+        event.setEventTime(request.eventTime());
+        event.setTitle(request.title());
+        event.setDescription(request.description());
+        event.setSeverity(request.severity());
+        event.setCategory(request.category());
+        return event;
+    }
+
+    private MedicalEvent mapToEntity(UpdateMedicalEventRequest request) {
+        MedicalEvent event = new MedicalEvent();
+        event.setId(request.id());
+        event.setPatientId(request.patientId());
+        event.setMedicationId(request.medicationId());
+        event.setEventTime(request.eventTime());
+        event.setTitle(request.title());
+        event.setDescription(request.description());
+        event.setSeverity(request.severity());
+        event.setCategory(request.category());
+        return event;
+    }
+
+    private MedicalEventResponse mapToResponse(MedicalEvent event) {
+        return new MedicalEventResponse(
+                event.getId(),
+                event.getPatientId(),
+                event.getMedicationId(),
+                event.getEventTime(),
+                event.getTitle(),
+                event.getDescription(),
+                event.getSeverity(),
+                event.getCategory(),
+                event.getCreatedAt(),
+                event.getUpdatedAt()
+        );
+    }
+}
