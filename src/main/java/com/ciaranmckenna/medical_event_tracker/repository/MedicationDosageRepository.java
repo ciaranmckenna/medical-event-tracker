@@ -3,6 +3,7 @@ package com.ciaranmckenna.medical_event_tracker.repository;
 import com.ciaranmckenna.medical_event_tracker.entity.DosageSchedule;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicationDosage;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -17,7 +18,7 @@ import java.util.UUID;
  * Provides query capabilities for medication dosage tracking and analysis.
  */
 @Repository
-public interface MedicationDosageRepository extends JpaRepository<MedicationDosage, UUID> {
+public interface MedicationDosageRepository extends JpaRepository<MedicationDosage, UUID>, JpaSpecificationExecutor<MedicationDosage> {
 
     /**
      * Find all medication dosages for a specific patient.
