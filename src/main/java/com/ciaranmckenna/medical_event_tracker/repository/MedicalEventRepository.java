@@ -4,6 +4,7 @@ import com.ciaranmckenna.medical_event_tracker.entity.MedicalEvent;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventCategory;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventSeverity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -17,7 +18,7 @@ import java.util.UUID;
  * Provides advanced query capabilities for medical event data retrieval and analysis.
  */
 @Repository
-public interface MedicalEventRepository extends JpaRepository<MedicalEvent, UUID> {
+public interface MedicalEventRepository extends JpaRepository<MedicalEvent, UUID>, JpaSpecificationExecutor<MedicalEvent> {
 
     /**
      * Find all medical events for a specific patient.
@@ -26,6 +27,14 @@ public interface MedicalEventRepository extends JpaRepository<MedicalEvent, UUID
      * @return list of medical events for the patient
      */
     List<MedicalEvent> findByPatientId(UUID patientId);
+
+    /**
+     * Count all medical events for a specific patient.
+     *
+     * @param patientId the patient's UUID
+     * @return count of medical events for the patient
+     */
+    long countByPatientId(UUID patientId);
 
     /**
      * Find medical events for a patient within a specific time range.

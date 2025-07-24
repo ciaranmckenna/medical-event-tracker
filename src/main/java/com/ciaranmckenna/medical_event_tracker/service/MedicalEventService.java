@@ -1,5 +1,7 @@
 package com.ciaranmckenna.medical_event_tracker.service;
 
+import com.ciaranmckenna.medical_event_tracker.dto.MedicalEventSearchRequest;
+import com.ciaranmckenna.medical_event_tracker.dto.PagedMedicalEventResponse;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEvent;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventCategory;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventSeverity;
@@ -118,8 +120,43 @@ public interface MedicalEventService {
      * Count medical events for a patient by category.
      *
      * @param patientId the UUID of the patient
-     * @param category  the medical event category
+     * @param category  the medical event category (null for all categories)
      * @return count of medical events in the specified category
      */
     long countMedicalEventsByPatientIdAndCategory(UUID patientId, MedicalEventCategory category);
+
+    /**
+     * Count all medical events for a patient.
+     *
+     * @param patientId the UUID of the patient
+     * @return total count of medical events for the patient
+     */
+    long countMedicalEventsByPatientId(UUID patientId);
+
+    /**
+     * Advanced search for medical events with filtering, sorting, and pagination.
+     * Supports complex queries with multiple criteria for medical event analysis.
+     *
+     * @param searchRequest the advanced search request with criteria and pagination
+     * @return paginated response containing matching medical events
+     * @throws IllegalArgumentException if search request is invalid
+     */
+    PagedMedicalEventResponse searchMedicalEvents(MedicalEventSearchRequest searchRequest);
+
+    /**
+     * Get all medical events for a patient with basic pagination support.
+     * Used for simple paginated retrieval without complex filtering.
+     *
+     * @param patientId the UUID of the patient
+     * @param page the page number (0-based)
+     * @param size the page size
+     * @param sortBy the field to sort by
+     * @param sortDirection the sort direction (ASC/DESC)
+     * @return paginated response containing medical events
+     */
+    PagedMedicalEventResponse getMedicalEventsByPatientIdPaginated(UUID patientId, 
+                                                                  int page, 
+                                                                  int size, 
+                                                                  String sortBy, 
+                                                                  String sortDirection);
 }
