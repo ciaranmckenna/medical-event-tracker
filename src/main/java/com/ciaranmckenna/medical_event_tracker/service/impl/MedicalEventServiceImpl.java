@@ -1,12 +1,21 @@
 package com.ciaranmckenna.medical_event_tracker.service.impl;
 
+import com.ciaranmckenna.medical_event_tracker.dto.MedicalEventResponse;
+import com.ciaranmckenna.medical_event_tracker.dto.MedicalEventSearchRequest;
+import com.ciaranmckenna.medical_event_tracker.dto.PagedMedicalEventResponse;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEvent;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventCategory;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventSeverity;
 import com.ciaranmckenna.medical_event_tracker.exception.InvalidMedicalDataException;
 import com.ciaranmckenna.medical_event_tracker.exception.MedicalEventNotFoundException;
 import com.ciaranmckenna.medical_event_tracker.repository.MedicalEventRepository;
+import com.ciaranmckenna.medical_event_tracker.repository.MedicalEventSpecification;
 import com.ciaranmckenna.medical_event_tracker.service.MedicalEventService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -114,5 +123,137 @@ public class MedicalEventServiceImpl implements MedicalEventService {
     @Transactional(readOnly = true)
     public long countMedicalEventsByPatientIdAndCategory(UUID patientId, MedicalEventCategory category) {
         return medicalEventRepository.countByPatientIdAndCategory(patientId, category);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countMedicalEventsByPatientId(UUID patientId) {
+        return medicalEventRepository.countByPatientId(patientId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PagedMedicalEventResponse searchMedicalEvents(MedicalEventSearchRequest searchRequest) {
+        if (searchRequest == null || searchRequest.patientId() == null) {
+            throw new InvalidMedicalDataException("Search request and patient ID cannot be null");
+        }
+        
+        if (!searchRequest.isValidDateRange()) {
+            throw new InvalidMedicalDataException("Invalid date range: start date must be before or equal to end date");
+        }
+        
+        // Create specification for dynamic query building
+        Specification<MedicalEvent> specification = MedicalEventSpecification.createSpecification(searchRequest);
+        
+        // Create pageable with sorting
+        Sort sort = createSort(searchRequest.sortBy(), searchRequest.sortDirection());
+        Pageable pageable = PageRequest.of(searchRequest.page(), searchRequest.size(), sort);
+        
+        // Execute search
+        Page<MedicalEvent> eventPage = medicalEventRepository.findAll(specification, pageable);
+        
+        // Convert to response DTOs
+        List<MedicalEventResponse> responseList = eventPage.getContent().stream()
+                .map(this::mapToResponse)
+                .toList();
+        
+        return PagedMedicalEventResponse.of(
+                responseList,
+                eventPage.getNumber(),
+                eventPage.getSize(),
+                eventPage.getTotalElements(),
+                searchRequest.sortBy(),
+                searchRequest.sortDirection()
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PagedMedicalEventResponse getMedicalEventsByPatientIdPaginated(UUID patientId, 
+                                                                          int page, 
+                                                                          int size, 
+                                                                          String sortBy, 
+                                                                          String sortDirection) {
+        if (patientId == null) {
+            throw new InvalidMedicalDataException("Patient ID cannot be null");
+        }
+        
+        // Create specification for patient filter
+        Specification<MedicalEvent> specification = MedicalEventSpecification.hasPatientId(patientId);
+        
+        // Create pageable with sorting
+        Sort sort = createSort(sortBy, sortDirection);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        // Execute query
+        Page<MedicalEvent> eventPage = medicalEventRepository.findAll(specification, pageable);
+        
+        // Convert to response DTOs
+        List<MedicalEventResponse> responseList = eventPage.getContent().stream()
+                .map(this::mapToResponse)
+                .toList();
+        
+        return PagedMedicalEventResponse.of(
+                responseList,
+                eventPage.getNumber(),
+                eventPage.getSize(),
+                eventPage.getTotalElements(),
+                sortBy,
+                sortDirection
+        );
+    }
+
+    /**
+     * Create a Sort object based on field name and direction.
+     * Provides safe sorting with validation for medical event fields.
+     */
+    private Sort createSort(String sortBy, String sortDirection) {
+        // Validate sort field to prevent SQL injection
+        String validatedSortBy = validateSortField(sortBy);
+        
+        Sort.Direction direction = "ASC".equalsIgnoreCase(sortDirection) 
+            ? Sort.Direction.ASC 
+            : Sort.Direction.DESC;
+            
+        return Sort.by(direction, validatedSortBy);
+    }
+
+    /**
+     * Validate sort field to ensure it exists and is safe for sorting.
+     * Prevents SQL injection and ensures field exists in the entity.
+     */
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            return "eventTime";
+        }
+        
+        // Allowed sort fields for medical events
+        return switch (sortBy.toLowerCase()) {
+            case "eventtime", "event_time" -> "eventTime";
+            case "createdat", "created_at" -> "createdAt";
+            case "updatedat", "updated_at" -> "updatedAt";
+            case "title" -> "title";
+            case "category" -> "category";
+            case "severity" -> "severity";
+            default -> "eventTime"; // Default safe sorting
+        };
+    }
+
+    /**
+     * Map MedicalEvent entity to MedicalEventResponse DTO.
+     */
+    private MedicalEventResponse mapToResponse(MedicalEvent event) {
+        return new MedicalEventResponse(
+                event.getId(),
+                event.getPatientId(),
+                event.getMedicationId(),
+                event.getEventTime(),
+                event.getTitle(),
+                event.getDescription(),
+                event.getSeverity(),
+                event.getCategory(),
+                event.getCreatedAt(),
+                event.getUpdatedAt()
+        );
     }
 }
