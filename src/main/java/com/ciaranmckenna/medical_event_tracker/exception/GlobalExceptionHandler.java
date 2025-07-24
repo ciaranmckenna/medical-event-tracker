@@ -3,6 +3,7 @@ package com.ciaranmckenna.medical_event_tracker.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -48,8 +49,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ValidationErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
-            String fieldName = ((FieldError) error).getField();
+            String fieldName;
             String errorMessage = error.getDefaultMessage();
+            
+            if (error instanceof FieldError fieldError) {
+                // Field-level validation errors
+                fieldName = fieldError.getField();
+            } else {
+                // Class-level validation errors (like @ValidDateRange)
+                fieldName = error.getObjectName();
+            }
+            
             errors.put(fieldName, errorMessage);
         });
 

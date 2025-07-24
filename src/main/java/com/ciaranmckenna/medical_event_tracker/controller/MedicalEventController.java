@@ -2,6 +2,8 @@ package com.ciaranmckenna.medical_event_tracker.controller;
 
 import com.ciaranmckenna.medical_event_tracker.dto.CreateMedicalEventRequest;
 import com.ciaranmckenna.medical_event_tracker.dto.MedicalEventResponse;
+import com.ciaranmckenna.medical_event_tracker.dto.MedicalEventSearchRequest;
+import com.ciaranmckenna.medical_event_tracker.dto.PagedMedicalEventResponse;
 import com.ciaranmckenna.medical_event_tracker.dto.UpdateMedicalEventRequest;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEvent;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventCategory;
@@ -198,6 +200,78 @@ public class MedicalEventController {
         
         return ResponseEntity.ok(responses);
     }
+
+    /**
+     * Advanced search for medical events with filtering, sorting, and pagination.
+     * Supports complex queries for comprehensive medical event analysis.
+     */
+    @PostMapping("/search")
+    public ResponseEntity<PagedMedicalEventResponse> searchMedicalEvents(
+            @Valid @RequestBody MedicalEventSearchRequest searchRequest) {
+        
+        PagedMedicalEventResponse response = medicalEventService.searchMedicalEvents(searchRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get medical events for a patient with pagination and sorting.
+     * Provides simple paginated access to all patient events.
+     */
+    @GetMapping("/patient/{patientId}/paginated")
+    public ResponseEntity<PagedMedicalEventResponse> getMedicalEventsPaginated(
+            @PathVariable UUID patientId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "eventTime") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection) {
+        
+        PagedMedicalEventResponse response = medicalEventService.getMedicalEventsByPatientIdPaginated(
+                patientId, page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get medical events statistics for a patient.
+     * Provides aggregated data for medical event analysis and reporting.
+     */
+    @GetMapping("/patient/{patientId}/statistics")
+    public ResponseEntity<MedicalEventStatistics> getMedicalEventStatistics(
+            @PathVariable UUID patientId) {
+        
+        // Get basic counts by category
+        long totalEvents = medicalEventService.countMedicalEventsByPatientId(patientId);
+        long symptomEvents = medicalEventService.countMedicalEventsByPatientIdAndCategory(patientId, MedicalEventCategory.SYMPTOM);
+        long medicationEvents = medicalEventService.countMedicalEventsByPatientIdAndCategory(patientId, MedicalEventCategory.MEDICATION);
+        long emergencyEvents = medicalEventService.countMedicalEventsByPatientIdAndCategory(patientId, MedicalEventCategory.EMERGENCY);
+        
+        // Get recent events for trend analysis
+        List<MedicalEvent> recentEvents = medicalEventService.getRecentMedicalEventsByPatientId(patientId, 30);
+        
+        MedicalEventStatistics statistics = new MedicalEventStatistics(
+                patientId,
+                totalEvents,
+                symptomEvents,
+                medicationEvents,
+                emergencyEvents,
+                recentEvents.size(),
+                LocalDateTime.now()
+        );
+        
+        return ResponseEntity.ok(statistics);
+    }
+
+    /**
+     * DTO for medical event statistics response.
+     */
+    public record MedicalEventStatistics(
+            UUID patientId,
+            long totalEvents,
+            long symptomEvents,
+            long medicationEvents,
+            long emergencyEvents,
+            long recentEvents,
+            LocalDateTime generatedAt
+    ) {}
 
     private MedicalEvent mapToEntity(CreateMedicalEventRequest request) {
         MedicalEvent event = new MedicalEvent();
