@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -155,4 +156,27 @@ public interface MedicalEventRepository extends JpaRepository<MedicalEvent, UUID
            "SUM(CASE WHEN me.category = 'EMERGENCY' THEN 1 ELSE 0 END) " +
            "FROM MedicalEvent me WHERE me.patientId = :patientId")
     Object[] getEventStatsByPatientId(@Param("patientId") UUID patientId);
+
+    /**
+     * Count medical events for a patient that occurred after a specific time.
+     *
+     * @param patientId the patient's UUID
+     * @param afterTime the cutoff time
+     * @return count of events after the specified time
+     */
+    long countByPatientIdAndEventTimeAfter(UUID patientId, LocalDateTime afterTime);
+
+    /**
+     * Find medical events for a patient by category within a time range.
+     *
+     * @param patientId the patient's UUID
+     * @param category  the event category
+     * @param startTime the start of the time range
+     * @param endTime   the end of the time range
+     * @return list of medical events matching the criteria
+     */
+    List<MedicalEvent> findByPatientIdAndCategoryAndEventTimeBetween(UUID patientId, 
+                                                                   MedicalEventCategory category,
+                                                                   LocalDateTime startTime, 
+                                                                   LocalDateTime endTime);
 }
