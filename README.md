@@ -55,6 +55,7 @@ The Medical Events Tracker is a secure, role-based application that enables heal
 
 ## 🛠 Tech Stack
 
+### Backend
 - **Framework**: Spring Boot 3.5.3
 - **Java Version**: 21
 - **Database**: H2 (development), MySQL (production)
@@ -64,14 +65,34 @@ The Medical Events Tracker is a secure, role-based application that enables heal
 - **Build Tool**: Maven
 - **Documentation**: Springdoc OpenAPI (planned)
 
+### Frontend (Stage 6)
+- **Framework**: React 18+ with TypeScript
+- **Build Tool**: Vite 5+ with hot module replacement
+- **State Management**: React Query (server state) + Zustand (client state)
+- **Routing**: React Router v6 with role-based route protection
+- **UI Components**: Custom design system with medical-specific components
+- **Charts & Visualization**: Recharts for correlation analysis and medical timelines
+- **Forms**: React Hook Form + Zod validation for medical data integrity
+- **Styling**: CSS Modules / Styled Components with responsive design
+- **Testing**: Vitest, React Testing Library, Playwright (E2E)
+- **Accessibility**: WCAG 2.1 AA compliance for medical applications
+- **PWA**: Service workers for offline medical data entry capabilities
+
 ## 🚀 Getting Started
 
 ### Prerequisites
 
+#### Backend Development
 - **Java 21** or higher
 - **Maven 3.8+**
 - **Git**
 - **Postman** (optional, for API testing)
+
+#### Frontend Development (Stage 6)
+- **Node.js 18+** with npm/yarn
+- **Modern browser** with developer tools
+- **VS Code** (recommended with React/TypeScript extensions)
+- **Git** for version control
 
 ### Installation
 
@@ -100,6 +121,119 @@ The Medical Events Tracker is a secure, role-based application that enables heal
      - Username: `sa`
      - Password: (leave empty)
    - **Health Check**: `http://localhost:8080/actuator/health`
+
+### Frontend Development (Stage 6)
+
+The frontend is a modern React application designed for medical professionals and carers to manage patient data with advanced analytics and visualization capabilities.
+
+#### Quick Start
+
+1. **Navigate to frontend directory**
+   ```bash
+   cd frontend
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
+
+3. **Start development server**
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   ```
+
+4. **Access the application**
+   - **Frontend URL**: `http://localhost:5173`
+   - **API Integration**: Automatically connects to backend at `http://localhost:8080`
+
+#### Available Scripts
+
+```bash
+# Development
+npm run dev          # Start development server with hot reload
+npm run dev:https    # Start with HTTPS for PWA testing
+
+# Building
+npm run build        # Production build with optimizations
+npm run preview      # Preview production build locally
+
+# Testing
+npm run test         # Run unit tests with Vitest
+npm run test:ui      # Run tests with UI interface
+npm run test:e2e     # Run end-to-end tests with Playwright
+npm run test:coverage # Generate test coverage report
+
+# Code Quality
+npm run lint         # ESLint code analysis
+npm run lint:fix     # Auto-fix linting issues
+npm run type-check   # TypeScript type checking
+npm run format       # Prettier code formatting
+
+# PWA & Deployment
+npm run build:pwa    # Build with PWA optimizations
+npm run analyze      # Bundle analyzer for optimization
+```
+
+#### Environment Configuration
+
+Create a `.env.local` file in the frontend directory:
+
+```env
+# API Configuration
+VITE_API_BASE_URL=http://localhost:8080
+VITE_API_TIMEOUT=10000
+
+# Feature Flags
+VITE_ENABLE_ANALYTICS=true
+VITE_ENABLE_OFFLINE_MODE=true
+VITE_ENABLE_PWA=true
+
+# Development
+VITE_MOCK_API=false
+VITE_DEBUG_MODE=true
+```
+
+#### Project Structure
+
+```
+frontend/
+├── src/
+│   ├── components/          # Reusable UI components
+│   │   ├── ui/             # Base design system components
+│   │   ├── forms/          # Medical form components
+│   │   ├── charts/         # Data visualization components
+│   │   └── layout/         # Layout and navigation
+│   ├── pages/              # Route-based page components
+│   │   ├── auth/           # Authentication pages
+│   │   ├── dashboard/      # Dashboard and analytics
+│   │   ├── patients/       # Patient management
+│   │   └── medications/    # Medication tracking
+│   ├── hooks/              # Custom React hooks
+│   ├── services/           # API and business logic
+│   ├── stores/             # Zustand state stores
+│   ├── types/              # TypeScript type definitions
+│   ├── utils/              # Utility functions
+│   ├── styles/             # Global styles and themes
+│   └── __tests__/          # Test files
+├── public/                 # Static assets
+├── docs/                   # Frontend documentation
+└── playwright/             # E2E test configurations
+```
+
+#### Key Features
+
+- **🏥 Medical Dashboard**: Real-time patient overview with key metrics
+- **📊 Analytics & Visualization**: Interactive charts for medication correlation analysis
+- **📱 Responsive Design**: Mobile-first approach for on-the-go access
+- **🔒 Role-Based Access**: Different interfaces for primary users, secondary users, and admins
+- **♿ Accessibility**: WCAG 2.1 AA compliant for medical environments
+- **🔄 Offline Support**: PWA capabilities for offline data entry
+- **🎨 Medical UI Components**: Specialized components for medical data input and display
 
 ## 📚 API Documentation
 
@@ -229,10 +363,20 @@ src/main/java/com/ciaranmckenna/medical_event_tracker/
 
 ## 🚧 Current Status
 
-**Stage 1 Complete**: Core authentication and user management system  
-**Next**: Patient management system (Stage 2)  
+**✅ Completed Stages**: 
+- **Stage 1**: Core authentication and user management system
+- **Stage 2**: Patient management system with CRUD operations
+- **Stage 3**: Medical event tracking and medication dosage recording
+- **Stage 4**: Advanced search and filtering capabilities with pagination
+- **Stage 5**: Data visualization and analytics with correlation analysis
 
-See [ROADMAP.md](ROADMAP.md) for detailed development plan and timeline.
+**🔄 In Progress**: 
+- **Stage 6**: Modern React frontend with TypeScript and medical-grade UI components
+
+**📋 Backend API**: Fully functional REST API with comprehensive analytics endpoints  
+**🎨 Frontend**: Ready for Stage 6 implementation with detailed guidelines and architecture
+
+See [MVP-roadmap.md](MVP-roadmap.md) for detailed development plan and [CLAUDE.md](CLAUDE.md) for comprehensive development guidelines.
 
 ## 🤝 Contributing
 
