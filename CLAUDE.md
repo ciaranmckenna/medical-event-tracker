@@ -298,4 +298,408 @@ When implementing features, always consider:
 
 ---
 
-**Remember:** This is medical software that impacts patient care. Accuracy, security, and reliability are paramount. When in doubt, choose the more robust, well-tested approach over the quick solution.
+---
+
+# Frontend Development Guidelines (Stage 6)
+
+## Core Principles
+- **Medical-First Design:** Prioritise patient safety and healthcare workflows
+- **Accessibility:** WCAG 2.1 AA compliance mandatory
+- **Type Safety:** Comprehensive TypeScript for medical data integrity
+- **Performance:** Sub-second load times for emergency scenarios
+- **Testing:** Component tests before implementation
+- **Offline Support:** PWA capabilities for unreliable networks
+
+## Tech Stack
+- **Framework:** React 18+ with TypeScript
+- **Build Tool:** Vite 5+ with hot reload
+- **State:** React Query (server) + Zustand (client)
+- **Routing:** React Router v6 with role-based protection
+- **Forms:** React Hook Form + Zod validation
+- **Charts:** Recharts for correlation analysis
+- **Testing:** Vitest, React Testing Library, Playwright
+
+## Project Structure
+```
+frontend/src/
+├── components/
+│   ├── ui/           # Design system components
+│   ├── forms/        # Medical form components
+│   ├── charts/       # Data visualization
+│   └── layout/       # Navigation and layout
+├── pages/            # Route components
+├── hooks/            # Custom React hooks
+├── services/         # API integration
+├── stores/           # Zustand state
+├── types/            # TypeScript definitions
+└── utils/            # Helper functions
+│   │   │   └── DataTable/
+│   │   ├── medical/            # Medical-specific components
+│   │   │   ├── PatientCard/
+│   │   │   ├── MedicationForm/
+│   │   │   ├── EventTimeline/
+│   │   │   └── CorrelationChart/
+│   │   ├── forms/             # Composite form components
+│   │   └── layout/            # Navigation and page layouts
+│   ├── pages/                 # Route-based components
+│   ├── hooks/                 # Custom React hooks
+│   │   ├── useApi.ts
+│   │   ├── useAuth.ts
+│   │   ├── useMedicalData.ts
+│   │   └── useOfflineSync.ts
+│   ├── services/              # API and business logic
+│   │   ├── api/
+│   │   ├── auth/
+│   │   └── validation/
+│   ├── stores/                # State management
+│   │   ├── authStore.ts
+│   │   ├── patientStore.ts
+│   │   └── uiStore.ts
+│   ├── types/                 # TypeScript definitions
+│   │   ├── api.ts
+│   │   ├── medical.ts
+│   │   └── ui.ts
+│   └── utils/                 # Helper functions
+├── docs/                      # Frontend documentation
+└── tests/                     # Test configurations
+```
+
+## Component Guidelines
+- **Design System:** Atomic components with medical-specific variants (emergency, critical)
+- **Form Validation:** React Hook Form + Zod with medical data constraints
+- **Accessibility:** WCAG 2.1 AA compliance, ARIA labels, keyboard navigation
+- **Medical Components:** Specialized forms for medications, events, patient data
+
+## State Management
+- **Server State:** React Query for API data with optimistic updates
+- **Client State:** Zustand for auth, UI state, offline data
+- **Caching:** 5-minute stale time for medical data, immediate updates for critical changes
+
+## Testing Requirements
+- **Unit Tests:** React Testing Library for all medical components
+- **Integration Tests:** API integration with mock medical data
+- **E2E Tests:** Playwright for critical workflows (medication tracking, event logging)
+- **Accessibility Tests:** Automated a11y checks in test suite
+
+## UI/UX Standards
+- **Color System:** Medical-grade palette with severity indicators (mild/moderate/severe/critical)
+- **Typography:** Clear hierarchy optimized for medical professionals
+- **Data Visualization:** Recharts with accessibility features for correlation analysis
+- **Emergency Patterns:** Quick access for urgent medical scenarios
+
+## Performance
+- **Code Splitting:** Route-based lazy loading
+- **Optimization:** Virtual scrolling for large datasets, memoization for expensive calculations
+- **PWA:** Service workers for offline medication/event entry
+- **Bundle Size:** Monitor with bundle analyzer, target <500KB initial load
+
+## Security & Deployment
+- **Input Validation:** Zod schemas with DOMPurify for medical data sanitization
+- **CSP Headers:** Strict content security policy for medical applications
+- **Token Management:** Secure httpOnly cookies in production, session storage in development
+- **Build Pipeline:** Type checking, linting, testing, coverage reports in CI/CD
+- **PWA Configuration:** Offline support with service workers for critical medical data entry
+  });
+
+  return (
+    <div ref={scrollElementRef} className="medical-data-table">
+      {virtualizer.getVirtualItems().map((virtualRow) => (
+        <MedicalDataRow
+          key={virtualRow.key}
+          data={data[virtualRow.index]}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: `${virtualRow.size}px`,
+            transform: `translateY(${virtualRow.start}px)`
+          }}
+        />
+      ))}
+    </div>
+  );
+});
+```
+
+### Offline Support and PWA
+```typescript
+// Service Worker for Offline Functionality
+export const useOfflineSync = () => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [pendingSync, setPendingSync] = useState<MedicalData[]>([]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      syncPendingData();
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const syncPendingData = async () => {
+    for (const data of pendingSync) {
+      try {
+        await apiClient.sync(data);
+        setPendingSync(prev => prev.filter(item => item.id !== data.id));
+      } catch (error) {
+        console.error('Sync failed for:', data.id, error);
+      }
+    }
+  };
+
+  const saveOfflineData = (data: MedicalData) => {
+    if (!isOnline) {
+      setPendingSync(prev => [...prev, data]);
+      localStorage.setItem('pendingMedicalData', JSON.stringify([...pendingSync, data]));
+    }
+  };
+
+  return { isOnline, pendingSync, saveOfflineData };
+};
+```
+
+## Security Guidelines for Frontend
+
+### Input Sanitization and Validation
+```typescript
+// Medical Data Validation Schemas
+export const medicationSchema = z.object({
+  name: z.string()
+    .min(1, 'Medication name is required')
+    .max(100, 'Medication name too long')
+    .regex(/^[a-zA-Z0-9\s\-\.]+$/, 'Invalid characters in medication name'),
+    
+  dosage: z.number()
+    .positive('Dosage must be positive')
+    .max(10000, 'Dosage exceeds maximum safe limit')
+    .refine((val) => val % 0.1 === 0, 'Dosage must be in increments of 0.1'),
+    
+  frequency: z.enum(['ONCE_DAILY', 'TWICE_DAILY', 'THREE_TIMES_DAILY', 'AS_NEEDED']),
+  
+  startDate: z.date()
+    .min(new Date('2020-01-01'), 'Start date too far in the past')
+    .max(new Date(), 'Start date cannot be in the future'),
+    
+  notes: z.string()
+    .max(500, 'Notes too long')
+    .transform((val) => sanitizeHtml(val)) // Sanitize HTML input
+});
+
+// XSS Protection Utility
+export const sanitizeHtml = (input: string): string => {
+  return DOMPurify.sanitize(input, {
+    ALLOWED_TAGS: [], // No HTML tags allowed in medical data
+    ALLOWED_ATTR: [],
+    RETURN_DOM_FRAGMENT: false
+  });
+};
+```
+
+### Secure API Communication
+```typescript
+// API Client with Security Headers
+export const createApiClient = (token: string) => {
+  const client = axios.create({
+    baseURL: import.meta.env.VITE_API_BASE_URL,
+    timeout: 10000,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  // Request interceptor for CSRF protection
+  client.interceptors.request.use((config) => {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
+    }
+    return config;
+  });
+
+  // Response interceptor for error handling
+  client.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        // Clear auth and redirect to login
+        authStore.getState().logout();
+        window.location.href = '/login';
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  return client;
+};
+```
+
+## Deployment and Build Guidelines
+
+### Vite Configuration for Medical Applications
+```typescript
+// vite.config.ts
+export default defineConfig({
+  plugins: [
+    react(),
+    vitePWA({
+      registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/api\.medical-tracker\.com\/.*$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              networkTimeoutSeconds: 3,
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
+      }
+    })
+  ],
+  
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          medical: ['recharts', 'react-hook-form'],
+          utils: ['zod', 'date-fns']
+        }
+      }
+    },
+    
+    // Security headers for production
+    assetsDir: 'assets',
+    sourcemap: false, // Disable in production for security
+    
+    // Optimize for medical applications
+    target: 'es2020',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console logs in production
+        drop_debugger: true
+      }
+    }
+  },
+  
+  server: {
+    https: true, // Required for PWA features
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false
+      }
+    }
+  }
+});
+```
+
+### CI/CD Pipeline for Frontend
+```yaml
+# .github/workflows/frontend-ci.yml
+name: Frontend CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+    paths: ['frontend/**']
+  pull_request:
+    branches: [main, develop]
+    paths: ['frontend/**']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+      
+      - name: Type checking
+        run: npm run type-check
+        working-directory: frontend
+      
+      - name: Linting
+        run: npm run lint
+        working-directory: frontend
+      
+      - name: Unit tests
+        run: npm run test:coverage
+        working-directory: frontend
+      
+      - name: E2E tests
+        run: |
+          npm run build
+          npm run preview &
+          npm run test:e2e
+        working-directory: frontend
+      
+      - name: Accessibility tests
+        run: npm run test:a11y
+        working-directory: frontend
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: frontend/coverage/lcov.info
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Build production
+        run: |
+          npm ci
+          npm run build
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: ${{ secrets.PRODUCTION_API_URL }}
+      
+      - name: Deploy to staging
+        run: npm run deploy:staging
+        working-directory: frontend
+```
+
+---
+
+**Remember:** Frontend development for medical applications requires the highest standards of accessibility, security, and reliability. Always prioritise user safety and data integrity over convenience or aesthetics. When in doubt, choose the more robust, well-tested approach over the quick solution.
