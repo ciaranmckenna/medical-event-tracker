@@ -177,4 +177,33 @@ public interface MedicationDosageRepository extends JpaRepository<MedicationDosa
            "ORDER BY md.administrationTime DESC")
     List<MedicationDosage> findRecentDosagesByPatientId(@Param("patientId") UUID patientId,
                                                        @Param("cutoffDate") LocalDateTime cutoffDate);
+
+    /**
+     * Count all medication dosages for a specific patient.
+     *
+     * @param patientId the patient's UUID
+     * @return count of medication dosages for the patient
+     */
+    long countByPatientId(UUID patientId);
+
+    /**
+     * Find medication dosages for a patient, medication, and time range.
+     *
+     * @param patientId    the patient's UUID
+     * @param medicationId the medication's UUID
+     * @param startTime    the start of the time range
+     * @param endTime      the end of the time range
+     * @return list of medication dosages matching the criteria
+     */
+    List<MedicationDosage> findByPatientIdAndMedicationIdAndAdministrationTimeBetween(
+            UUID patientId, UUID medicationId, LocalDateTime startTime, LocalDateTime endTime);
+
+    /**
+     * Find distinct medication IDs for a specific patient.
+     *
+     * @param patientId the patient's UUID
+     * @return list of unique medication IDs for the patient
+     */
+    @Query("SELECT DISTINCT md.medicationId FROM MedicationDosage md WHERE md.patientId = :patientId")
+    List<UUID> findDistinctMedicationIdsByPatientId(@Param("patientId") UUID patientId);
 }
