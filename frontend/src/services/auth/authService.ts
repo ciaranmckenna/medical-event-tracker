@@ -4,27 +4,41 @@ import type { LoginRequest, RegisterRequest, AuthResponse, User } from '../../ty
 export class AuthService {
   // Authentication endpoints
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/api/auth/login', credentials);
+    const response = await apiClient.post<User>('/api/auth/login', credentials);
+    
+    // Backend currently returns User directly instead of AuthResponse
+    // TODO: Backend should return {token, user, expiresIn}
+    // For now, create a mock token for demo purposes
+    const mockAuthResponse: AuthResponse = {
+      token: 'demo-jwt-token-' + Date.now(),
+      user: response as User,
+      expiresIn: 3600
+    };
     
     // Store token and user data
-    if (response.token) {
-      apiClient.setAuthToken(response.token);
-      this.storeUserData(response.user);
-    }
+    apiClient.setAuthToken(mockAuthResponse.token);
+    this.storeUserData(mockAuthResponse.user);
     
-    return response;
+    return mockAuthResponse;
   }
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/api/auth/register', userData);
+    const response = await apiClient.post<User>('/api/auth/register', userData);
+    
+    // Backend currently returns User directly instead of AuthResponse
+    // TODO: Backend should return {token, user, expiresIn}
+    // For now, create a mock token for demo purposes
+    const mockAuthResponse: AuthResponse = {
+      token: 'demo-jwt-token-' + Date.now(),
+      user: response as User,
+      expiresIn: 3600
+    };
     
     // Store token and user data
-    if (response.token) {
-      apiClient.setAuthToken(response.token);
-      this.storeUserData(response.user);
-    }
+    apiClient.setAuthToken(mockAuthResponse.token);
+    this.storeUserData(mockAuthResponse.user);
     
-    return response;
+    return mockAuthResponse;
   }
 
   async logout(): Promise<void> {
@@ -79,6 +93,11 @@ export class AuthService {
     const token = this.getStoredToken();
     if (!token) return false;
 
+    // For demo tokens, just check if token exists and user data exists
+    if (token.startsWith('demo-jwt-token-')) {
+      return this.getStoredUser() !== null;
+    }
+
     try {
       // Decode JWT token to check expiration
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -91,6 +110,13 @@ export class AuthService {
   }
 
   async validateToken(): Promise<boolean> {
+    const token = this.getStoredToken();
+    
+    // For demo tokens, just validate locally
+    if (token?.startsWith('demo-jwt-token-')) {
+      return this.isTokenValid();
+    }
+    
     try {
       await this.getCurrentUser();
       return true;
