@@ -66,6 +66,24 @@ export const Navigation: React.FC = () => {
             >
               💊 Medications
             </Link>
+            <Link 
+              to="/events" 
+              style={location.pathname === '/events' ? activeLinkStyle : linkStyle}
+            >
+              📋 Events
+            </Link>
+            <Link 
+              to="/dosages" 
+              style={location.pathname === '/dosages' ? activeLinkStyle : linkStyle}
+            >
+              📅 Schedule
+            </Link>
+            <Link 
+              to="/analytics" 
+              style={location.pathname === '/analytics' ? activeLinkStyle : linkStyle}
+            >
+              📊 Analytics
+            </Link>
           </>
         ) : (
           <>

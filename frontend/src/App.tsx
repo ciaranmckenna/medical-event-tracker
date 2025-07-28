@@ -8,6 +8,9 @@ import { RegisterPage } from './pages/auth/RegisterPage'
 import { DashboardPage } from './pages/dashboard/DashboardPage'
 import { PatientsPage } from './pages/patients/PatientsPage'
 import { MedicationsPage } from './pages/medications/MedicationsPage'
+import { EventsPage } from './pages/events/EventsPage'
+import { DosagesPage } from './pages/dosages/DosagesPage'
+import { AnalyticsPage } from './pages/analytics/AnalyticsPage'
 import './App.css'
 
 function App() {
@@ -45,6 +48,30 @@ function App() {
               element={
                 <ProtectedRoute requiredRoles={['PRIMARY_USER', 'SECONDARY_USER', 'ADMIN']}>
                   <MedicationsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/events" 
+              element={
+                <ProtectedRoute requiredRoles={['PRIMARY_USER', 'SECONDARY_USER', 'ADMIN']}>
+                  <EventsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dosages" 
+              element={
+                <ProtectedRoute requiredRoles={['PRIMARY_USER', 'SECONDARY_USER', 'ADMIN']}>
+                  <DosagesPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/analytics" 
+              element={
+                <ProtectedRoute requiredRoles={['PRIMARY_USER', 'SECONDARY_USER', 'ADMIN']}>
+                  <AnalyticsPage />
                 </ProtectedRoute>
               } 
             />

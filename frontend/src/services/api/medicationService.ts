@@ -48,27 +48,122 @@ export interface MedicationDosageSearchParams {
   administered?: boolean;
 }
 
+// Mock data for testing when backend is not available
+const MOCK_MEDICATIONS: Medication[] = [
+  {
+    id: '1',
+    patientId: '1', // John Doe
+    name: 'Levetiracetam',
+    dosage: 500,
+    unit: 'mg',
+    frequency: 'TWICE_DAILY',
+    startDate: '2024-01-01',
+    status: 'ACTIVE',
+    notes: 'Take with food to reduce stomach upset',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: '2',
+    patientId: '3', // Emma Johnson
+    name: 'Lamotrigine',
+    dosage: 100,
+    unit: 'mg',
+    frequency: 'TWICE_DAILY',
+    startDate: '2024-01-15',
+    status: 'ACTIVE',
+    notes: 'Gradual dose increase as prescribed',
+    createdAt: '2024-01-15T00:00:00Z',
+    updatedAt: '2024-01-15T00:00:00Z'
+  },
+  {
+    id: '3',
+    patientId: '2', // Sarah Smith
+    name: 'Carbamazepine',
+    dosage: 200,
+    unit: 'mg',
+    frequency: 'TWICE_DAILY',
+    startDate: '2024-02-01',
+    status: 'ACTIVE',
+    notes: 'Monitor blood levels regularly',
+    createdAt: '2024-02-01T00:00:00Z',
+    updatedAt: '2024-02-01T00:00:00Z'
+  },
+  {
+    id: '4',
+    patientId: '1', // John Doe
+    name: 'Phenytoin',
+    dosage: 100,
+    unit: 'mg',
+    frequency: 'ONCE_DAILY',
+    startDate: '2024-01-01',
+    endDate: '2024-06-01',
+    status: 'INACTIVE',
+    notes: 'Discontinued due to side effects',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-06-01T00:00:00Z'
+  },
+  {
+    id: '5',
+    patientId: '4', // George Wilson
+    name: 'Valproic Acid',
+    dosage: 250,
+    unit: 'mg',
+    frequency: 'TWICE_DAILY',
+    startDate: '2024-03-01',
+    status: 'ACTIVE',
+    notes: 'Senior patient - monitor liver function',
+    createdAt: '2024-03-01T00:00:00Z',
+    updatedAt: '2024-03-01T00:00:00Z'
+  }
+];
+
 export class MedicationService {
   private readonly baseUrl = '/api/medications';
   private readonly dosageUrl = '/api/medication-dosages';
+  private useMockData = true; // Force mock data for frontend development
 
   // Medication CRUD operations
   async getMedications(params: MedicationSearchParams = {}): Promise<PaginatedResponse<Medication>> {
-    const searchParams = new URLSearchParams();
+    if (this.useMockData) {
+      return this.getMockMedications(params);
+    }
     
-    if (params.page !== undefined) searchParams.append('page', params.page.toString());
-    if (params.size !== undefined) searchParams.append('size', params.size.toString());
-    if (params.patientId) searchParams.append('patientId', params.patientId);
-    if (params.medicationName) searchParams.append('name', params.medicationName);
-    if (params.active !== undefined) searchParams.append('active', params.active.toString());
-    if (params.frequency) searchParams.append('frequency', params.frequency);
+    try {
+      const searchParams = new URLSearchParams();
+      
+      if (params.page !== undefined) searchParams.append('page', params.page.toString());
+      if (params.size !== undefined) searchParams.append('size', params.size.toString());
+      if (params.patientId) searchParams.append('patientId', params.patientId);
+      if (params.medicationName) searchParams.append('name', params.medicationName);
+      if (params.active !== undefined) searchParams.append('active', params.active.toString());
+      if (params.frequency) searchParams.append('frequency', params.frequency);
 
-    const url = `${this.baseUrl}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
-    return apiClient.get<PaginatedResponse<Medication>>(url);
+      const url = `${this.baseUrl}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+      return apiClient.get<PaginatedResponse<Medication>>(url);
+    } catch (error) {
+      console.warn('Medications API failed, switching to mock data:', error);
+      this.useMockData = true;
+      return this.getMockMedications(params);
+    }
   }
 
   async getMedication(id: string): Promise<Medication> {
-    return apiClient.get<Medication>(`${this.baseUrl}/${id}`);
+    if (this.useMockData) {
+      const medication = MOCK_MEDICATIONS.find(med => med.id === id);
+      if (!medication) throw new Error('Medication not found');
+      return medication;
+    }
+    
+    try {
+      return apiClient.get<Medication>(`${this.baseUrl}/${id}`);
+    } catch (error) {
+      console.warn('Medication API failed, switching to mock data:', error);
+      this.useMockData = true;
+      const medication = MOCK_MEDICATIONS.find(med => med.id === id);
+      if (!medication) throw new Error('Medication not found');
+      return medication;
+    }
   }
 
   async createMedication(medication: MedicationCreateRequest): Promise<Medication> {
@@ -81,6 +176,58 @@ export class MedicationService {
 
   async deleteMedication(id: string): Promise<void> {
     return apiClient.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  // Mock data helper methods
+  private getMockMedications(params: MedicationSearchParams = {}): PaginatedResponse<Medication> {
+    let filteredMedications = [...MOCK_MEDICATIONS];
+    
+    // Apply patient filter
+    if (params.patientId) {
+      filteredMedications = filteredMedications.filter(med => med.patientId === params.patientId);
+    }
+    
+    // Apply medication name filter
+    if (params.medicationName) {
+      const searchLower = params.medicationName.toLowerCase();
+      filteredMedications = filteredMedications.filter(med =>
+        med.name.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Apply active status filter
+    if (params.active !== undefined) {
+      filteredMedications = filteredMedications.filter(med => 
+        params.active ? med.status === 'ACTIVE' : med.status !== 'ACTIVE'
+      );
+    }
+    
+    // Apply frequency filter
+    if (params.frequency) {
+      filteredMedications = filteredMedications.filter(med => med.frequency === params.frequency);
+    }
+    
+    // Sort by creation date (newest first)
+    filteredMedications.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    
+    // Simple pagination
+    const page = params.page || 0;
+    const size = params.size || 20;
+    const startIndex = page * size;
+    const endIndex = startIndex + size;
+    const paginatedMedications = filteredMedications.slice(startIndex, endIndex);
+    
+    return {
+      content: paginatedMedications,
+      totalElements: filteredMedications.length,
+      totalPages: Math.ceil(filteredMedications.length / size),
+      page,
+      size,
+      first: page === 0,
+      last: endIndex >= filteredMedications.length
+    };
   }
 
   async getMedicationsByPatient(patientId: string): Promise<Medication[]> {

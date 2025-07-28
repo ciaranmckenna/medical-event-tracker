@@ -87,11 +87,12 @@ export class PatientService {
 
   // Get all patients with pagination and search
   async getPatients(params: PatientSearchParams = {}): Promise<PaginatedResponse<Patient>> {
+    // Always use mock data for frontend development
+    if (this.useMockData) {
+      return this.getMockPatients(params);
+    }
+    
     try {
-      if (this.useMockData) {
-        return this.getMockPatients(params);
-      }
-      
       const searchParams = new URLSearchParams();
       
       if (params.page !== undefined) searchParams.append('page', params.page.toString());
@@ -111,12 +112,13 @@ export class PatientService {
 
   // Get single patient by ID
   async getPatient(id: string): Promise<Patient> {
+    if (this.useMockData) {
+      const patient = MOCK_PATIENTS.find(p => p.id === id);
+      if (!patient) throw new Error('Patient not found');
+      return patient;
+    }
+    
     try {
-      if (this.useMockData) {
-        const patient = MOCK_PATIENTS.find(p => p.id === id);
-        if (!patient) throw new Error('Patient not found');
-        return patient;
-      }
       return apiClient.get<Patient>(`${this.baseUrl}/${id}`);
     } catch (error) {
       console.warn('Patient API failed, switching to mock data:', error);
