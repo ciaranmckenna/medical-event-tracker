@@ -1,3 +1,64 @@
+// Medical Event Types for Seizure/Episode Tracking
+export type EventType = 
+  | 'SEIZURE'
+  | 'MEDICATION_REACTION' 
+  | 'SYMPTOM'
+  | 'EMERGENCY'
+  | 'ROUTINE_CHECK'
+  | 'OTHER';
+
+export type SeizureType = 
+  | 'TONIC_CLONIC'      // Grand mal
+  | 'FOCAL_AWARE'       // Simple partial
+  | 'FOCAL_IMPAIRED'    // Complex partial
+  | 'ABSENCE'           // Petit mal
+  | 'MYOCLONIC'         // Muscle jerks
+  | 'ATONIC'            // Drop attacks
+  | 'UNKNOWN';
+
+export type SeverityLevel = 'MILD' | 'MODERATE' | 'SEVERE' | 'CRITICAL';
+export type EventStatus = 'ACTIVE' | 'RESOLVED' | 'ONGOING' | 'REQUIRES_FOLLOW_UP';
+
+// Enhanced Medical Event Interface for Seizure Tracking
+export interface MedicalEvent {
+  id: string;
+  patientId: string;
+  type: EventType;
+  title: string;
+  description: string;
+  
+  // Seizure-specific fields
+  seizureType?: SeizureType;
+  duration?: number; // in seconds
+  severity: SeverityLevel;
+  status: EventStatus;
+  
+  // Location and context
+  location?: string;
+  triggers?: string[];
+  
+  // Medical response
+  medicationGiven?: string;
+  dosageGiven?: number;
+  emergencyContactCalled?: boolean;
+  hospitalRequired?: boolean;
+  
+  // Timestamps
+  eventTimestamp: string; // When the event occurred
+  reportedTimestamp: string; // When it was logged
+  resolvedTimestamp?: string; // When it was resolved
+  
+  // Metadata
+  reportedBy: string; // User who reported
+  witnessedBy?: string[];
+  notes?: string;
+  attachments?: string[]; // URLs to images/videos
+  
+  // System fields
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Medical Form Types
 export interface MedicationFormData {
   name: string;
@@ -20,14 +81,45 @@ export interface PatientFormData {
   notes?: string;
 }
 
+// Enhanced Medical Event Form for Seizure Logging
 export interface MedicalEventFormData {
-  eventTime: Date;
+  patientId: string;
+  type: EventType;
   title: string;
-  description?: string;
-  severity: 'MILD' | 'MODERATE' | 'SEVERE' | 'CRITICAL';
-  category: 'SYMPTOM' | 'SIDE_EFFECT' | 'ADVERSE_REACTION' | 'OBSERVATION' | 'EMERGENCY' | 'MEDICATION';
+  description: string;
+  
+  // Seizure-specific
+  seizureType?: SeizureType;
   duration?: number;
-  medicationId?: string;
+  severity: SeverityLevel;
+  
+  // Context
+  location?: string;
+  triggers?: string;
+  
+  // Medical response
+  medicationGiven?: string;
+  dosageGiven?: number;
+  emergencyContactCalled?: boolean;
+  hospitalRequired?: boolean;
+  
+  // Timing
+  eventDate: string;
+  eventTime: string;
+  
+  // Additional info
+  witnessedBy?: string;
+  notes?: string;
+}
+
+// Quick emergency logging interface
+export interface QuickEventLog {
+  patientId: string;
+  type: EventType;
+  severity: SeverityLevel;
+  startTime: string;
+  duration?: number;
+  notes?: string;
 }
 
 export interface DosageFormData {
