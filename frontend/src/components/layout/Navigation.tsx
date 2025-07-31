@@ -1,101 +1,88 @@
+import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import './Navigation.css';
 
 export const Navigation: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
+  
 
+  // Handle logout
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
-  const navStyle = {
-    padding: '20px',
-    borderBottom: '1px solid #ddd',
-    marginBottom: '20px',
-    backgroundColor: '#f8f9fa',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  };
 
-  const linkStyle = {
-    margin: '0 15px',
-    textDecoration: 'none',
-    padding: '8px 16px',
-    borderRadius: '4px',
-    backgroundColor: '#007bff',
-    color: 'white',
-    fontSize: '14px'
-  };
-
-  const activeLinkStyle = {
-    ...linkStyle,
-    backgroundColor: '#0056b3'
-  };
-
-  const logoutButtonStyle = {
-    ...linkStyle,
-    backgroundColor: '#dc3545',
-    cursor: 'pointer',
-    border: 'none'
-  };
 
   return (
-    <nav style={navStyle}>
-      <div>
+    <nav className="nav-bar" role="navigation" aria-label="Main navigation">
+      <div className="nav-container">
         {isAuthenticated ? (
           <>
             <Link 
               to="/dashboard" 
-              style={location.pathname === '/dashboard' ? activeLinkStyle : linkStyle}
+              className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}
+              aria-current={location.pathname === '/dashboard' ? 'page' : undefined}
             >
               📊 Dashboard
             </Link>
+            
             <Link 
               to="/patients" 
-              style={location.pathname === '/patients' ? activeLinkStyle : linkStyle}
+              className={`nav-link ${location.pathname === '/patients' ? 'active' : ''}`}
+              aria-current={location.pathname === '/patients' ? 'page' : undefined}
             >
               👥 Patients
             </Link>
+            
             <Link 
               to="/medications" 
-              style={location.pathname === '/medications' ? activeLinkStyle : linkStyle}
+              className={`nav-link ${location.pathname === '/medications' ? 'active' : ''}`}
+              aria-current={location.pathname === '/medications' ? 'page' : undefined}
             >
               💊 Medications
             </Link>
+            
+            <Link 
+              to="/analytics" 
+              className={`nav-link ${location.pathname === '/analytics' ? 'active' : ''}`}
+              aria-current={location.pathname === '/analytics' ? 'page' : undefined}
+            >
+              📊 Analytics
+            </Link>
+            
             <Link 
               to="/events" 
-              style={location.pathname === '/events' ? activeLinkStyle : linkStyle}
+              className={`nav-link ${location.pathname === '/events' ? 'active' : ''}`}
+              aria-current={location.pathname === '/events' ? 'page' : undefined}
             >
               📋 Events
             </Link>
+            
             <Link 
               to="/dosages" 
-              style={location.pathname === '/dosages' ? activeLinkStyle : linkStyle}
+              className={`nav-link ${location.pathname === '/dosages' ? 'active' : ''}`}
+              aria-current={location.pathname === '/dosages' ? 'page' : undefined}
             >
               📅 Schedule
-            </Link>
-            <Link 
-              to="/analytics" 
-              style={location.pathname === '/analytics' ? activeLinkStyle : linkStyle}
-            >
-              📊 Analytics
             </Link>
           </>
         ) : (
           <>
             <Link 
               to="/login" 
-              style={location.pathname === '/login' ? activeLinkStyle : linkStyle}
+              className={`nav-link ${location.pathname === '/login' ? 'active' : ''}`}
+              aria-current={location.pathname === '/login' ? 'page' : undefined}
             >
               🔐 Login
             </Link>
             <Link 
               to="/register" 
-              style={location.pathname === '/register' ? activeLinkStyle : linkStyle}
+              className={`nav-link ${location.pathname === '/register' ? 'active' : ''}`}
+              aria-current={location.pathname === '/register' ? 'page' : undefined}
             >
               📝 Register
             </Link>
@@ -103,23 +90,21 @@ export const Navigation: React.FC = () => {
         )}
       </div>
       
-      <div style={{ display: 'flex', alignItems: 'center' }}>
+      <div className="user-container">
         {isAuthenticated && user && (
           <>
-            <span style={{ marginRight: '15px', fontSize: '14px', color: '#666' }}>
+            <span className="user-info">
               👤 {user.firstName} {user.lastName} ({user.role})
             </span>
-            <button onClick={handleLogout} style={logoutButtonStyle}>
+            <button 
+              onClick={handleLogout} 
+              className="nav-link logout"
+              aria-label="Logout from application"
+            >
               🚪 Logout
             </button>
           </>
         )}
-        <Link 
-          to="/test" 
-          style={{...linkStyle, backgroundColor: '#6c757d', marginLeft: '10px'}}
-        >
-          🧪 Test
-        </Link>
       </div>
     </nav>
   );
