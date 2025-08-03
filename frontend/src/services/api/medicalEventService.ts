@@ -31,8 +31,31 @@ export interface MedicalEventUpdateRequest extends MedicalEventCreateRequest {
   id: string;
 }
 
-// Mock data for testing when backend is not available
-const MOCK_MEDICAL_EVENTS: MedicalEvent[] = [
+// localStorage helper functions
+const STORAGE_KEY = 'medical-events-data';
+
+const loadMockEventsFromStorage = (): MedicalEvent[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.warn('Failed to load events from localStorage:', error);
+  }
+  return DEFAULT_MOCK_EVENTS;
+};
+
+const saveMockEventsToStorage = (events: MedicalEvent[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  } catch (error) {
+    console.warn('Failed to save events to localStorage:', error);
+  }
+};
+
+// Default mock data for testing when backend is not available
+const DEFAULT_MOCK_EVENTS: MedicalEvent[] = [
   // John Doe - Recent Events (Last 30 days)
   {
     id: '1',
@@ -305,6 +328,7 @@ const MOCK_MEDICAL_EVENTS: MedicalEvent[] = [
 export class MedicalEventService {
   private readonly baseUrl = '/api/medical-events';
   private useMockData = true; // Force mock data for frontend development
+  private mockEvents: MedicalEvent[] = loadMockEventsFromStorage();
 
   // Get all medical events with pagination and search
   async getMedicalEvents(params: MedicalEventSearchParams = {}): Promise<PaginatedResponse<MedicalEvent>> {
@@ -338,7 +362,7 @@ export class MedicalEventService {
   async getMedicalEvent(id: string): Promise<MedicalEvent> {
     try {
       if (this.useMockData) {
-        const event = MOCK_MEDICAL_EVENTS.find(e => e.id === id);
+        const event = this.mockEvents.find(e => e.id === id);
         if (!event) throw new Error('Medical event not found');
         return event;
       }
@@ -346,7 +370,7 @@ export class MedicalEventService {
     } catch (error) {
       console.warn('Medical event API failed, switching to mock data:', error);
       this.useMockData = true;
-      const event = MOCK_MEDICAL_EVENTS.find(e => e.id === id);
+      const event = this.mockEvents.find(e => e.id === id);
       if (!event) throw new Error('Medical event not found');
       return event;
     }
@@ -356,8 +380,13 @@ export class MedicalEventService {
   async createMedicalEvent(event: MedicalEventCreateRequest): Promise<MedicalEvent> {
     try {
       if (this.useMockData) {
+        // Generate unique ID to avoid collisions
+        const existingIds = this.mockEvents.map(e => parseInt(e.id, 10)).filter(id => !isNaN(id));
+        const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+        const newId = (maxId + 1).toString();
+        
         const newEvent: MedicalEvent = {
-          id: (MOCK_MEDICAL_EVENTS.length + 1).toString(),
+          id: newId,
           ...event,
           status: 'ACTIVE',
           reportedTimestamp: new Date().toISOString(),
@@ -365,15 +394,21 @@ export class MedicalEventService {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
-        MOCK_MEDICAL_EVENTS.push(newEvent);
+        this.mockEvents.push(newEvent);
+        saveMockEventsToStorage(this.mockEvents);
         return newEvent;
       }
       return apiClient.post<MedicalEvent>(this.baseUrl, event);
     } catch (error) {
       console.warn('Create medical event API failed, switching to mock data:', error);
       this.useMockData = true;
+      // Generate unique ID to avoid collisions
+      const existingIds = this.mockEvents.map(e => parseInt(e.id, 10)).filter(id => !isNaN(id));
+      const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+      const newId = (maxId + 1).toString();
+      
       const newEvent: MedicalEvent = {
-        id: (MOCK_MEDICAL_EVENTS.length + 1).toString(),
+        id: newId,
         ...event,
         status: 'ACTIVE',
         reportedTimestamp: new Date().toISOString(),
@@ -381,7 +416,8 @@ export class MedicalEventService {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      MOCK_MEDICAL_EVENTS.push(newEvent);
+      this.mockEvents.push(newEvent);
+      saveMockEventsToStorage(this.mockEvents);
       return newEvent;
     }
   }
@@ -390,27 +426,29 @@ export class MedicalEventService {
   async updateMedicalEvent(id: string, event: MedicalEventUpdateRequest): Promise<MedicalEvent> {
     try {
       if (this.useMockData) {
-        const index = MOCK_MEDICAL_EVENTS.findIndex(e => e.id === id);
+        const index = this.mockEvents.findIndex(e => e.id === id);
         if (index === -1) throw new Error('Medical event not found');
-        MOCK_MEDICAL_EVENTS[index] = {
-          ...MOCK_MEDICAL_EVENTS[index],
+        this.mockEvents[index] = {
+          ...this.mockEvents[index],
           ...event,
           updatedAt: new Date().toISOString()
         };
-        return MOCK_MEDICAL_EVENTS[index];
+        saveMockEventsToStorage(this.mockEvents);
+        return this.mockEvents[index];
       }
       return apiClient.put<MedicalEvent>(`${this.baseUrl}/${id}`, event);
     } catch (error) {
       console.warn('Update medical event API failed, switching to mock data:', error);
       this.useMockData = true;
-      const index = MOCK_MEDICAL_EVENTS.findIndex(e => e.id === id);
+      const index = this.mockEvents.findIndex(e => e.id === id);
       if (index === -1) throw new Error('Medical event not found');
-      MOCK_MEDICAL_EVENTS[index] = {
-        ...MOCK_MEDICAL_EVENTS[index],
+      this.mockEvents[index] = {
+        ...this.mockEvents[index],
         ...event,
         updatedAt: new Date().toISOString()
       };
-      return MOCK_MEDICAL_EVENTS[index];
+      saveMockEventsToStorage(this.mockEvents);
+      return this.mockEvents[index];
     }
   }
 
@@ -418,18 +456,20 @@ export class MedicalEventService {
   async deleteMedicalEvent(id: string): Promise<void> {
     try {
       if (this.useMockData) {
-        const index = MOCK_MEDICAL_EVENTS.findIndex(e => e.id === id);
+        const index = this.mockEvents.findIndex(e => e.id === id);
         if (index === -1) throw new Error('Medical event not found');
-        MOCK_MEDICAL_EVENTS.splice(index, 1);
+        this.mockEvents.splice(index, 1);
+        saveMockEventsToStorage(this.mockEvents);
         return;
       }
       return apiClient.delete<void>(`${this.baseUrl}/${id}`);
     } catch (error) {
       console.warn('Delete medical event API failed, switching to mock data:', error);
       this.useMockData = true;
-      const index = MOCK_MEDICAL_EVENTS.findIndex(e => e.id === id);
+      const index = this.mockEvents.findIndex(e => e.id === id);
       if (index === -1) throw new Error('Medical event not found');
-      MOCK_MEDICAL_EVENTS.splice(index, 1);
+      this.mockEvents.splice(index, 1);
+      saveMockEventsToStorage(this.mockEvents);
     }
   }
 
@@ -447,20 +487,28 @@ export class MedicalEventService {
       duration: formData.duration,
       severity: formData.severity,
       location: formData.location,
-      triggers: formData.triggers ? formData.triggers.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+      triggers: formData.triggers ? (
+        Array.isArray(formData.triggers) 
+          ? formData.triggers 
+          : formData.triggers.split(',').map(t => t.trim()).filter(Boolean)
+      ) : undefined,
       medicationGiven: formData.medicationGiven,
       dosageGiven: formData.dosageGiven,
       emergencyContactCalled: formData.emergencyContactCalled,
       hospitalRequired: formData.hospitalRequired,
       eventTimestamp,
-      witnessedBy: formData.witnessedBy ? formData.witnessedBy.split(',').map(w => w.trim()).filter(Boolean) : undefined,
+      witnessedBy: formData.witnessedBy ? (
+        Array.isArray(formData.witnessedBy)
+          ? formData.witnessedBy
+          : formData.witnessedBy.split(',').map(w => w.trim()).filter(Boolean)
+      ) : undefined,
       notes: formData.notes
     };
   }
 
   // Mock data helper methods
   private getMockMedicalEvents(params: MedicalEventSearchParams = {}): PaginatedResponse<MedicalEvent> {
-    let filteredEvents = [...MOCK_MEDICAL_EVENTS];
+    let filteredEvents = [...this.mockEvents];
     
     // Apply patient filter
     if (params.patientId) {
@@ -496,8 +544,19 @@ export class MedicalEventService {
     if (params.dateFrom || params.dateTo) {
       filteredEvents = filteredEvents.filter(event => {
         const eventDate = new Date(event.eventTimestamp);
-        if (params.dateFrom && eventDate < new Date(params.dateFrom)) return false;
-        if (params.dateTo && eventDate > new Date(params.dateTo)) return false;
+        
+        if (params.dateFrom) {
+          const fromDate = new Date(params.dateFrom);
+          fromDate.setHours(0, 0, 0, 0); // Start of day
+          if (eventDate < fromDate) return false;
+        }
+        
+        if (params.dateTo) {
+          const toDate = new Date(params.dateTo);
+          toDate.setHours(23, 59, 59, 999); // End of day
+          if (eventDate > toDate) return false;
+        }
+        
         return true;
       });
     }

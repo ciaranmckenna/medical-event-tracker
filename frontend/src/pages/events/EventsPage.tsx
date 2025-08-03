@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../components/ui/ToastContainer';
 import { medicalEventService } from '../../services/api/medicalEventService';
 import { patientService } from '../../services/api/patientService';
 import { MedicalEventForm } from '../../components/forms/MedicalEventForm';
@@ -15,6 +16,7 @@ import {
 export const EventsPage: React.FC = () => {
   const { user, hasRole } = useAuth();
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
   
   // State management
   const [events, setEvents] = useState<MedicalEvent[]>([]);
@@ -84,8 +86,14 @@ export const EventsPage: React.FC = () => {
       setEvents(prev => [newEvent, ...prev]);
       setShowForm(false);
       setEmergencyMode(false);
+      
+      // Show success notification
+      const patientName = getPatientName(newEvent.patientId);
+      const eventType = EVENT_TYPE_DISPLAY[newEvent.type]?.label || 'Event';
+      showSuccess(`✅ ${eventType} successfully logged for ${patientName}`, 5000);
     } catch (error) {
       console.error('Failed to create event:', error);
+      showError('❌ Failed to create medical event. Please try again.');
       throw error;
     }
   };
@@ -105,18 +113,37 @@ export const EventsPage: React.FC = () => {
       ));
       setEditingEvent(undefined);
       setShowForm(false);
+      
+      // Show success notification
+      const patientName = getPatientName(updatedEvent.patientId);
+      const eventType = EVENT_TYPE_DISPLAY[updatedEvent.type]?.label || 'Event';
+      showSuccess(`📝 ${eventType} successfully updated for ${patientName}`, 4000);
     } catch (error) {
       console.error('Failed to update event:', error);
+      showError('❌ Failed to update medical event. Please try again.');
       throw error;
     }
   };
 
   const handleDeleteEvent = async (eventId: string) => {
     try {
+      // Find the event before deletion for notification
+      const eventToDelete = events.find(e => e.id === eventId);
+      
       await medicalEventService.deleteMedicalEvent(eventId);
       setEvents(prev => prev.filter(event => event.id !== eventId));
+      
+      // Show success notification
+      if (eventToDelete) {
+        const patientName = getPatientName(eventToDelete.patientId);
+        const eventType = EVENT_TYPE_DISPLAY[eventToDelete.type]?.label || 'Event';
+        showSuccess(`🗑️ ${eventType} deleted for ${patientName}`, 3000);
+      } else {
+        showSuccess('🗑️ Medical event deleted successfully', 3000);
+      }
     } catch (error) {
       console.error('Failed to delete event:', error);
+      showError('❌ Failed to delete medical event. Please try again.');
       throw error;
     }
   };
