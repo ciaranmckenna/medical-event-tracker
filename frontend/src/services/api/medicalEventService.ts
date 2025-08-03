@@ -356,8 +356,13 @@ export class MedicalEventService {
   async createMedicalEvent(event: MedicalEventCreateRequest): Promise<MedicalEvent> {
     try {
       if (this.useMockData) {
+        // Generate unique ID to avoid collisions
+        const existingIds = MOCK_MEDICAL_EVENTS.map(e => parseInt(e.id, 10)).filter(id => !isNaN(id));
+        const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+        const newId = (maxId + 1).toString();
+        
         const newEvent: MedicalEvent = {
-          id: (MOCK_MEDICAL_EVENTS.length + 1).toString(),
+          id: newId,
           ...event,
           status: 'ACTIVE',
           reportedTimestamp: new Date().toISOString(),
@@ -372,8 +377,13 @@ export class MedicalEventService {
     } catch (error) {
       console.warn('Create medical event API failed, switching to mock data:', error);
       this.useMockData = true;
+      // Generate unique ID to avoid collisions
+      const existingIds = MOCK_MEDICAL_EVENTS.map(e => parseInt(e.id, 10)).filter(id => !isNaN(id));
+      const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+      const newId = (maxId + 1).toString();
+      
       const newEvent: MedicalEvent = {
-        id: (MOCK_MEDICAL_EVENTS.length + 1).toString(),
+        id: newId,
         ...event,
         status: 'ACTIVE',
         reportedTimestamp: new Date().toISOString(),
@@ -447,13 +457,21 @@ export class MedicalEventService {
       duration: formData.duration,
       severity: formData.severity,
       location: formData.location,
-      triggers: formData.triggers ? formData.triggers.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+      triggers: formData.triggers ? (
+        Array.isArray(formData.triggers) 
+          ? formData.triggers 
+          : formData.triggers.split(',').map(t => t.trim()).filter(Boolean)
+      ) : undefined,
       medicationGiven: formData.medicationGiven,
       dosageGiven: formData.dosageGiven,
       emergencyContactCalled: formData.emergencyContactCalled,
       hospitalRequired: formData.hospitalRequired,
       eventTimestamp,
-      witnessedBy: formData.witnessedBy ? formData.witnessedBy.split(',').map(w => w.trim()).filter(Boolean) : undefined,
+      witnessedBy: formData.witnessedBy ? (
+        Array.isArray(formData.witnessedBy)
+          ? formData.witnessedBy
+          : formData.witnessedBy.split(',').map(w => w.trim()).filter(Boolean)
+      ) : undefined,
       notes: formData.notes
     };
   }
