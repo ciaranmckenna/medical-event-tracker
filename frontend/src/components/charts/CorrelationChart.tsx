@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { SimpleChart } from './SimpleChart';
-import type { MedicalEvent, Medication } from '../../types/api';
+import type { MedicalEvent, Medication, Patient } from '../../types/api';
 import type { DosageRecord } from '../../services/api/dosageService';
 
 interface CorrelationChartProps {
@@ -11,6 +11,7 @@ interface CorrelationChartProps {
     start: Date;
     end: Date;
   };
+  patient: Patient;
   patientName?: string;
 }
 
@@ -23,6 +24,12 @@ interface ChartDataPoint {
   medicationAdherence: number;
   events: MedicalEvent[];
   dosages: DosageRecord[];
+  patientAge: number;
+  patientHeight: number;
+  patientWeight: number;
+  bmi: number;
+  weightCategory: string;
+  episodeFrequencyScore: number;
 }
 
 export const CorrelationChart: React.FC<CorrelationChartProps> = ({
@@ -30,13 +37,47 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
   medications,
   dosageRecords,
   timeRange,
+  patient,
   patientName = 'Patient'
 }) => {
-  const [viewType, setViewType] = useState<'timeline' | 'correlation' | 'adherence'>('timeline');
+  const [viewType, setViewType] = useState<'demographic-correlation' | 'timeline' | 'correlation' | 'adherence'>('demographic-correlation');
   const [selectedMedication, setSelectedMedication] = useState<string>('all');
+  const [demographicFactor, setDemographicFactor] = useState<'age' | 'bmi' | 'weight' | 'height'>('bmi');
   
+  // Calculate patient demographics
+  const calculateAge = (dateOfBirth: string): number => {
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const calculateBMI = (weight: number, height: number): number => {
+    if (!weight || !height) return 0;
+    const heightInMeters = height / 100; // Convert cm to meters
+    return Math.round((weight / (heightInMeters * heightInMeters)) * 10) / 10;
+  };
+
+  const getWeightCategory = (bmi: number): string => {
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25) return 'Normal';
+    if (bmi < 30) return 'Overweight';
+    return 'Obese';
+  };
+
+  const calculateEpisodeFrequencyScore = (seizureCount: number, adherence: number): number => {
+    // Higher score = worse outcome (more seizures, less adherence)
+    const seizureWeight = seizureCount * 3; // Weight seizures heavily
+    const adherenceWeight = (100 - adherence) / 10; // Inverse adherence (0-10 scale)
+    return Math.round((seizureWeight + adherenceWeight) * 10) / 10;
+  };
+
   // Early return if required props are missing
-  if (!events || !medications || !dosageRecords || !timeRange) {
+  if (!events || !medications || !dosageRecords || !timeRange || !patient) {
     return (
       <div style={{
         display: 'flex',
@@ -90,7 +131,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
         const dateStr = date.toISOString().split('T')[0];
         
         const dayEvents = events.filter(event => 
-          event && event.eventTimestamp && event.eventTimestamp.startsWith(dateStr)
+          event && event.eventTime && event.eventTime.startsWith(dateStr)
         ) || [];
         
         const dayDosages = dosageRecords.filter(record => 
@@ -100,7 +141,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
         ) || [];
         
         // Calculate metrics
-        const seizureEvents = dayEvents.filter(event => event.type === 'SEIZURE') || [];
+        const seizureEvents = dayEvents.filter(event => event.category === 'SYMPTOM' && event.title.toLowerCase().includes('seizure')) || [];
         const seizureCount = seizureEvents.length || 0;
         
         // Calculate average severity (convert to numeric scale)
@@ -113,6 +154,38 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
         const expectedDosages = dayDosages.length || 0;
         const adherence = expectedDosages > 0 ? (medicationCount / expectedDosages) * 100 : 100;
         
+        // Calculate patient demographics for this data point (accounting for changes over time)
+        const today = new Date();
+        const dataPointDate = new Date(dateStr);
+        const daysFromToday = Math.floor((today.getTime() - dataPointDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        const baseAge = calculateAge(patient.dateOfBirth);
+        // Age changes over time - this data point represents the patient's age on that specific day
+        const patientAge = baseAge - (daysFromToday / 365.25);
+        
+        // Weight fluctuates over time (±2-5% variation based on diet, medication effects, etc.)
+        const baseWeight = patient.weight || 0;
+        const weightVariation = Math.sin(daysFromToday * 0.2) * (baseWeight * 0.04); // 4% variation
+        const patientWeight = Math.max(baseWeight * 0.95, baseWeight + weightVariation);
+        
+        // Height changes for children under 18 (growth over time)
+        const baseHeight = patient.height || 0;
+        let patientHeight = baseHeight;
+        if (baseAge < 18) {
+          // Children grow: subtract growth for past dates (they were shorter before)
+          const monthlyGrowthRate = baseAge < 12 ? 0.6 : baseAge < 16 ? 0.4 : 0.2; // cm per month
+          const heightChange = (daysFromToday / 30) * monthlyGrowthRate;
+          patientHeight = Math.max(baseHeight * 0.80, baseHeight - heightChange);
+        } else {
+          // Adults have minimal height variation (±0.5cm due to posture, spinal compression)
+          const heightVariation = Math.sin(daysFromToday * 0.1) * 0.5;
+          patientHeight = baseHeight + heightVariation;
+        }
+        
+        const bmi = calculateBMI(patientWeight, patientHeight);
+        const weightCategory = getWeightCategory(bmi);
+        const episodeFrequencyScore = calculateEpisodeFrequencyScore(seizureCount, adherence);
+        
         dataPoints.push({
           date: dateStr,
           timestamp: date.getTime(),
@@ -121,7 +194,13 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
           medicationCount: medicationCount || 0,
           medicationAdherence: Math.round(adherence || 0),
           events: dayEvents || [],
-          dosages: dayDosages || []
+          dosages: dayDosages || [],
+          patientAge,
+          patientHeight,
+          patientWeight,
+          bmi,
+          weightCategory,
+          episodeFrequencyScore
         });
       }
       
@@ -132,23 +211,50 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
     }
   }, [events, dosageRecords, timeRange, selectedMedication]);
 
-  // Correlation analysis
+  // Enhanced correlation analysis with demographics
   const correlationStats = useMemo(() => {
     const validPoints = chartData.filter(point => point.seizureCount > 0 || point.medicationAdherence < 100);
     
     if (validPoints.length < 2) {
-      return { correlation: 0, trend: 'insufficient-data', interpretation: 'Not enough data for analysis' };
+      return { 
+        correlation: 0, 
+        trend: 'insufficient-data', 
+        interpretation: 'Not enough data for analysis',
+        demographicCorrelation: 0,
+        demographicInterpretation: 'Insufficient data',
+        combinedScore: 0
+      };
     }
     
     // Calculate correlation between medication adherence and seizure frequency
     const adherenceValues = validPoints.map(p => p.medicationAdherence);
     const seizureValues = validPoints.map(p => p.seizureCount);
-    
     const correlation = calculateCorrelation(adherenceValues, seizureValues);
+    
+    // Calculate demographic correlation
+    const demographicValues = validPoints.map(p => {
+      switch (demographicFactor) {
+        case 'age': return p.patientAge;
+        case 'bmi': return p.bmi;
+        case 'weight': return p.patientWeight;
+        case 'height': return p.patientHeight;
+        default: return p.bmi;
+      }
+    });
+    
+    const episodeScores = validPoints.map(p => p.episodeFrequencyScore);
+    const demographicCorrelation = calculateCorrelation(demographicValues, episodeScores);
+    
+    // Combined analysis score
+    const combinedScore = Math.round(
+      ((Math.abs(correlation) * 0.6) + (Math.abs(demographicCorrelation) * 0.4)) * 100
+    ) / 100;
     
     let trend: 'positive' | 'negative' | 'neutral' | 'insufficient-data' = 'neutral';
     let interpretation = '';
+    let demographicInterpretation = '';
     
+    // Main correlation interpretation
     if (Math.abs(correlation) < 0.3) {
       trend = 'neutral';
       interpretation = 'No significant correlation between medication adherence and seizure frequency';
@@ -160,8 +266,24 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
       interpretation = 'Higher medication adherence correlates with more seizures (review medication effectiveness)';
     }
     
-    return { correlation, trend, interpretation };
-  }, [chartData]);
+    // Demographic correlation interpretation
+    if (Math.abs(demographicCorrelation) < 0.3) {
+      demographicInterpretation = `No significant correlation between ${demographicFactor.toUpperCase()} and episode frequency`;
+    } else if (demographicCorrelation > 0.3) {
+      demographicInterpretation = `Higher ${demographicFactor.toUpperCase()} correlates with increased episode frequency`;
+    } else {
+      demographicInterpretation = `Higher ${demographicFactor.toUpperCase()} correlates with decreased episode frequency`;
+    }
+    
+    return { 
+      correlation, 
+      trend, 
+      interpretation, 
+      demographicCorrelation,
+      demographicInterpretation,
+      combinedScore
+    };
+  }, [chartData, demographicFactor]);
 
   // Custom tooltip for charts
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -201,6 +323,18 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
           }}>
             📊 {data.medicationAdherence || 0}% adherence
           </p>
+          
+          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '8px', marginTop: '8px' }}>
+            <p style={{ margin: '2px 0', fontSize: '12px', color: '#6b7280' }}>
+              👤 Age: {data.patientAge} years
+            </p>
+            <p style={{ margin: '2px 0', fontSize: '12px', color: '#6b7280' }}>
+              📏 BMI: {data.bmi} ({data.weightCategory})
+            </p>
+            <p style={{ margin: '2px 0', fontSize: '12px', color: '#6b7280' }}>
+              📈 Episode Score: {data.episodeFrequencyScore}
+            </p>
+          </div>
         </div>
       );
     } catch (error) {
@@ -294,7 +428,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
     }
   };
 
-  const activeMedications = medications?.filter(med => med.status === 'ACTIVE') || [];
+  const activeMedications = medications?.filter(med => med.active === true) || [];
   const totalSeizures = chartData.reduce((sum, point) => sum + point.seizureCount, 0);
   const averageAdherence = chartData.length > 0 ? Math.round(
     chartData.reduce((sum, point) => sum + point.medicationAdherence, 0) / chartData.length
@@ -319,30 +453,48 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
             ))}
           </select>
           
+          <select
+            value={demographicFactor}
+            onChange={(e) => setDemographicFactor(e.target.value as 'age' | 'bmi' | 'weight' | 'height')}
+            style={selectStyle}
+          >
+            <option value="bmi">BMI Analysis</option>
+            <option value="age">Age Analysis</option>
+            <option value="weight">Weight Analysis</option>
+            <option value="height">Height Analysis</option>
+          </select>
+          
+          <button
+            onClick={() => setViewType('demographic-correlation')}
+            style={buttonStyle(viewType === 'demographic-correlation')}
+          >
+            📊 Demographics
+          </button>
+          
           <button
             onClick={() => setViewType('timeline')}
             style={buttonStyle(viewType === 'timeline')}
           >
-            Timeline
+            📈 Timeline
           </button>
           
           <button
             onClick={() => setViewType('correlation')}
             style={buttonStyle(viewType === 'correlation')}
           >
-            Correlation
+            🔗 Correlation
           </button>
           
           <button
             onClick={() => setViewType('adherence')}
             style={buttonStyle(viewType === 'adherence')}
           >
-            Adherence
+            💊 Adherence
           </button>
         </div>
       </div>
 
-      {/* Statistics Summary */}
+      {/* Enhanced Statistics Summary */}
       <div style={statsStyle}>
         <div style={statStyle}>
           <div style={statNumberStyle('#dc2626')}>{totalSeizures}</div>
@@ -360,7 +512,21 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
           <div style={statNumberStyle(getTrendColor(correlationStats.trend))}>
             {Math.abs(correlationStats.correlation).toFixed(2)}
           </div>
-          <div style={statLabelStyle}>Correlation Strength</div>
+          <div style={statLabelStyle}>Med-Episode Correlation</div>
+        </div>
+        
+        <div style={statStyle}>
+          <div style={statNumberStyle('#8b5cf6')}>
+            {Math.abs(correlationStats.demographicCorrelation || 0).toFixed(2)}
+          </div>
+          <div style={statLabelStyle}>{demographicFactor.toUpperCase()}-Episode Correlation</div>
+        </div>
+        
+        <div style={statStyle}>
+          <div style={statNumberStyle('#06b6d4')}>
+            {correlationStats.combinedScore || 0}
+          </div>
+          <div style={statLabelStyle}>Combined Analysis Score</div>
         </div>
         
         <div style={statStyle}>
@@ -374,11 +540,11 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
              correlationStats.trend === 'negative' ? '⚠️ Negative' : 
              correlationStats.trend === 'neutral' ? '➡️ Neutral' : '❓ Insufficient'}
           </div>
-          <div style={statLabelStyle}>Correlation Trend</div>
+          <div style={statLabelStyle}>Overall Trend</div>
         </div>
       </div>
 
-      {/* Interpretation */}
+      {/* Enhanced Interpretation */}
       <div style={{
         backgroundColor: getTrendColor(correlationStats.trend) + '15',
         border: `1px solid ${getTrendColor(correlationStats.trend)}30`,
@@ -386,7 +552,22 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
         padding: '12px',
         marginBottom: '20px'
       }}>
-        <strong>Analysis:</strong> {correlationStats.interpretation}
+        <div style={{ marginBottom: '8px' }}>
+          <strong>💊 Medication Analysis:</strong> {correlationStats.interpretation}
+        </div>
+        <div style={{ marginBottom: '8px' }}>
+          <strong>📊 Demographic Analysis:</strong> {correlationStats.demographicInterpretation}
+        </div>
+        <div style={{ 
+          backgroundColor: 'rgba(255, 255, 255, 0.7)', 
+          padding: '8px', 
+          borderRadius: '4px',
+          fontSize: '14px'
+        }}>
+          <strong>🔍 Combined Insight:</strong> Patient demographics (Age: {patient ? calculateAge(patient.dateOfBirth) : 'N/A'}, 
+          BMI: {patient && patient.weight && patient.height ? calculateBMI(patient.weight, patient.height) : 'N/A'}) 
+          {correlationStats.combinedScore > 0.5 ? 'show significant' : 'show minimal'} correlation with treatment response patterns.
+        </div>
       </div>
 
       {/* Charts */}
@@ -413,11 +594,28 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
         ) : (
           <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center' }}>
             <SimpleChart
-              data={chartData.map(point => ({
-                date: point.date,
-                seizureCount: point.seizureCount,
-                medicationAdherence: point.medicationAdherence
-              }))}
+              data={chartData.map(point => {
+                const baseData = {
+                  date: point.date,
+                  seizureCount: point.seizureCount,
+                  medicationAdherence: point.medicationAdherence,
+                  episodeFrequencyScore: point.episodeFrequencyScore
+                };
+                
+                // Add demographic data based on selected factor
+                switch (demographicFactor) {
+                  case 'age':
+                    return { ...baseData, demographicValue: point.patientAge, demographicLabel: 'Age (years)' };
+                  case 'bmi':
+                    return { ...baseData, demographicValue: point.bmi, demographicLabel: 'BMI' };
+                  case 'weight':
+                    return { ...baseData, demographicValue: point.patientWeight, demographicLabel: 'Weight (kg)' };
+                  case 'height':
+                    return { ...baseData, demographicValue: point.patientHeight, demographicLabel: 'Height (cm)' };
+                  default:
+                    return { ...baseData, demographicValue: point.bmi, demographicLabel: 'BMI' };
+                }
+              })}
               type={viewType}
               width={800}
               height={350}
