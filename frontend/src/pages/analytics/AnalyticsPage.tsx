@@ -8,6 +8,7 @@ import { patientService } from '../../services/api/patientService';
 import { CorrelationChart } from '../../components/charts/CorrelationChart';
 import type { MedicalEvent, Patient, Medication } from '../../types/api';
 import type { DosageRecord } from '../../services/api/dosageService';
+import { mockAnalyticsData } from '../../services/mockData/analyticsData';
 
 export const AnalyticsPage: React.FC = () => {
   const { user } = useAuth();
@@ -28,6 +29,9 @@ export const AnalyticsPage: React.FC = () => {
     const start = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
     return { start, end };
   });
+  
+  // Development toggle for mock data
+  const [useMockData, setUseMockData] = useState<boolean>(false);
 
   useEffect(() => {
     if (!user) {
@@ -35,7 +39,7 @@ export const AnalyticsPage: React.FC = () => {
       return;
     }
     loadInitialData();
-  }, [user, navigate]);
+  }, [user, navigate, useMockData]);
 
   useEffect(() => {
     if (selectedPatientId) {
@@ -45,17 +49,29 @@ export const AnalyticsPage: React.FC = () => {
 
   const loadInitialData = async () => {
     try {
-      const [patientsResponse, medicationsResponse] = await Promise.all([
-        patientService.getPatients(),
-        medicationService.getMedications()
-      ]);
-      
-      setPatients(patientsResponse.content);
-      setMedications(medicationsResponse.content);
-      
-      // Auto-select first patient if available
-      if (patientsResponse.content.length > 0) {
-        setSelectedPatientId(patientsResponse.content[0].id);
+      if (useMockData) {
+        // Use mock data for demonstration
+        setPatients(mockAnalyticsData.patients);
+        setMedications(mockAnalyticsData.medications);
+        
+        // Auto-select first patient if available
+        if (mockAnalyticsData.patients.length > 0) {
+          setSelectedPatientId(mockAnalyticsData.patients[0].id);
+        }
+      } else {
+        // Use real API data
+        const [patientsResponse, medicationsResponse] = await Promise.all([
+          patientService.getPatients(),
+          medicationService.getMedications()
+        ]);
+        
+        setPatients(patientsResponse.content);
+        setMedications(medicationsResponse.content);
+        
+        // Auto-select first patient if available
+        if (patientsResponse.content.length > 0) {
+          setSelectedPatientId(patientsResponse.content[0].id);
+        }
       }
     } catch (error) {
       console.error('Failed to load initial data:', error);
@@ -69,23 +85,44 @@ export const AnalyticsPage: React.FC = () => {
     if (!selectedPatientId) return;
     
     try {
-      const [eventsResponse, dosageResponse] = await Promise.all([
-        medicalEventService.getMedicalEvents({
-          patientId: selectedPatientId,
-          dateFrom: timeRange.start.toISOString().split('T')[0],
-          dateTo: timeRange.end.toISOString().split('T')[0],
-          size: 1000
-        }),
-        dosageService.getDosageRecords({
-          patientId: selectedPatientId,
-          dateFrom: timeRange.start.toISOString().split('T')[0],
-          dateTo: timeRange.end.toISOString().split('T')[0],
-          size: 1000
-        })
-      ]);
-      
-      setEvents(eventsResponse.content);
-      setDosageRecords(dosageResponse.content);
+      if (useMockData) {
+        // Filter mock data for selected patient and time range
+        const patientEvents = mockAnalyticsData.medicalEvents.filter(event => {
+          const eventDate = new Date(event.eventTime);
+          return event.patientId === selectedPatientId && 
+                 eventDate >= timeRange.start && 
+                 eventDate <= timeRange.end;
+        });
+        
+        const patientDosages = mockAnalyticsData.dosageRecords.filter(record => {
+          const recordDate = new Date(record.scheduledTime);
+          return record.patientId === selectedPatientId && 
+                 recordDate >= timeRange.start && 
+                 recordDate <= timeRange.end;
+        });
+        
+        setEvents(patientEvents);
+        setDosageRecords(patientDosages);
+      } else {
+        // Use real API data
+        const [eventsResponse, dosageResponse] = await Promise.all([
+          medicalEventService.getMedicalEvents({
+            patientId: selectedPatientId,
+            dateFrom: timeRange.start.toISOString().split('T')[0],
+            dateTo: timeRange.end.toISOString().split('T')[0],
+            size: 1000
+          }),
+          dosageService.getDosageRecords({
+            patientId: selectedPatientId,
+            dateFrom: timeRange.start.toISOString().split('T')[0],
+            dateTo: timeRange.end.toISOString().split('T')[0],
+            size: 1000
+          })
+        ]);
+        
+        setEvents(eventsResponse.content);
+        setDosageRecords(dosageResponse.content);
+      }
     } catch (error) {
       console.error('Failed to load analytics data:', error);
       setError('Failed to load analytics data');
@@ -103,7 +140,7 @@ export const AnalyticsPage: React.FC = () => {
 
   // Calculate key statistics
   const getKeyStatistics = () => {
-    const seizureEvents = events.filter(event => event.type === 'SEIZURE');
+    const seizureEvents = events.filter(event => event.category === 'SYMPTOM' && event.title.toLowerCase().includes('seizure'));
     const totalDays = Math.ceil((timeRange.end.getTime() - timeRange.start.getTime()) / (1000 * 60 * 60 * 24));
     
     const patientMeds = getPatientMedications(selectedPatientId);
@@ -113,15 +150,15 @@ export const AnalyticsPage: React.FC = () => {
     
     // Calculate seizure frequency trends
     const firstHalf = events.filter(event => {
-      const eventDate = new Date(event.eventTimestamp);
+      const eventDate = new Date(event.eventTime);
       const midPoint = new Date(timeRange.start.getTime() + (timeRange.end.getTime() - timeRange.start.getTime()) / 2);
-      return eventDate >= timeRange.start && eventDate <= midPoint && event.type === 'SEIZURE';
+      return eventDate >= timeRange.start && eventDate <= midPoint && event.category === 'SYMPTOM' && event.title.toLowerCase().includes('seizure');
     });
     
     const secondHalf = events.filter(event => {
-      const eventDate = new Date(event.eventTimestamp);
+      const eventDate = new Date(event.eventTime);
       const midPoint = new Date(timeRange.start.getTime() + (timeRange.end.getTime() - timeRange.start.getTime()) / 2);
-      return eventDate > midPoint && eventDate <= timeRange.end && event.type === 'SEIZURE';
+      return eventDate > midPoint && eventDate <= timeRange.end && event.category === 'SYMPTOM' && event.title.toLowerCase().includes('seizure');
     });
     
     const firstHalfRate = firstHalf.length / (totalDays / 2);
@@ -134,7 +171,7 @@ export const AnalyticsPage: React.FC = () => {
       seizureFrequency: totalDays > 0 ? Math.round((seizureEvents.length / totalDays) * 10) / 10 : 0,
       adherenceRate,
       totalEvents: events.length,
-      activeMedications: patientMeds.filter(med => med.status === 'ACTIVE').length,
+      activeMedications: patientMeds.filter(med => med.active === true).length,
       trendDirection,
       averageSeverity: seizureEvents.length > 0 ? 
         seizureEvents.reduce((sum, event) => {
@@ -295,6 +332,36 @@ export const AnalyticsPage: React.FC = () => {
           <p style={{ color: '#6b7280', margin: '5px 0 0 0' }}>
             Medication adherence vs medical event correlation analysis
           </p>
+          {useMockData && (
+            <div style={{
+              backgroundColor: '#fef3c7',
+              border: '1px solid #f59e0b',
+              borderRadius: '6px',
+              padding: '8px 12px',
+              marginTop: '8px',
+              fontSize: '12px',
+              color: '#92400e'
+            }}>
+              📊 Using demonstration data with realistic correlations
+            </div>
+          )}
+        </div>
+        <div>
+          <button
+            onClick={() => setUseMockData(!useMockData)}
+            style={{
+              padding: '8px 16px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              backgroundColor: useMockData ? '#2563eb' : 'white',
+              color: useMockData ? 'white' : '#374151',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: useMockData ? '600' : '400'
+            }}
+          >
+            {useMockData ? '📊 Demo Data' : '🔄 Real Data'}
+          </button>
         </div>
       </div>
 
@@ -423,6 +490,7 @@ export const AnalyticsPage: React.FC = () => {
             medications={getPatientMedications(selectedPatientId)}
             dosageRecords={dosageRecords}
             timeRange={timeRange}
+            patient={patients.find(p => p.id === selectedPatientId)!}
             patientName={getPatientName(selectedPatientId)}
           />
         </div>
