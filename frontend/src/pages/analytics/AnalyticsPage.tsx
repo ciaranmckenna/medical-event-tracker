@@ -140,7 +140,12 @@ export const AnalyticsPage: React.FC = () => {
 
   // Calculate key statistics
   const getKeyStatistics = () => {
-    const seizureEvents = events.filter(event => event.category === 'SYMPTOM' && event.title.toLowerCase().includes('seizure'));
+    // Handle both data formats: mock data uses 'category' field, real events use 'type' field
+    const seizureEvents = events.filter(event => {
+      const hasSeizureType = (event as any).type === 'SEIZURE';
+      const hasSeizureCategory = (event as any).category === 'SYMPTOM' && event.title.toLowerCase().includes('seizure');
+      return hasSeizureType || hasSeizureCategory;
+    });
     const totalDays = Math.ceil((timeRange.end.getTime() - timeRange.start.getTime()) / (1000 * 60 * 60 * 24));
     
     const patientMeds = getPatientMedications(selectedPatientId);
@@ -150,15 +155,21 @@ export const AnalyticsPage: React.FC = () => {
     
     // Calculate seizure frequency trends
     const firstHalf = events.filter(event => {
-      const eventDate = new Date(event.eventTime);
+      // Handle both eventTime (mock data) and eventTimestamp (real data) fields
+      const eventDate = new Date((event as any).eventTime || (event as any).eventTimestamp);
       const midPoint = new Date(timeRange.start.getTime() + (timeRange.end.getTime() - timeRange.start.getTime()) / 2);
-      return eventDate >= timeRange.start && eventDate <= midPoint && event.category === 'SYMPTOM' && event.title.toLowerCase().includes('seizure');
+      const hasSeizureType = (event as any).type === 'SEIZURE';
+      const hasSeizureCategory = (event as any).category === 'SYMPTOM' && event.title.toLowerCase().includes('seizure');
+      return eventDate >= timeRange.start && eventDate <= midPoint && (hasSeizureType || hasSeizureCategory);
     });
     
     const secondHalf = events.filter(event => {
-      const eventDate = new Date(event.eventTime);
+      // Handle both eventTime (mock data) and eventTimestamp (real data) fields
+      const eventDate = new Date((event as any).eventTime || (event as any).eventTimestamp);
       const midPoint = new Date(timeRange.start.getTime() + (timeRange.end.getTime() - timeRange.start.getTime()) / 2);
-      return eventDate > midPoint && eventDate <= timeRange.end && event.category === 'SYMPTOM' && event.title.toLowerCase().includes('seizure');
+      const hasSeizureType = (event as any).type === 'SEIZURE';
+      const hasSeizureCategory = (event as any).category === 'SYMPTOM' && event.title.toLowerCase().includes('seizure');
+      return eventDate > midPoint && eventDate <= timeRange.end && (hasSeizureType || hasSeizureCategory);
     });
     
     const firstHalfRate = firstHalf.length / (totalDays / 2);
