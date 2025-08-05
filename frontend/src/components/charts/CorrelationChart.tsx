@@ -163,24 +163,33 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
         // Age changes over time - this data point represents the patient's age on that specific day
         const patientAge = baseAge - (daysFromToday / 365.25);
         
-        // Weight fluctuates over time (±2-5% variation based on diet, medication effects, etc.)
+        // Height and weight should remain constant for real patient data unless explicitly updated
+        // Only simulate growth for children under 18 in mock/demo data scenarios
         const baseWeight = patient.weight || 0;
-        const weightVariation = Math.sin(daysFromToday * 0.2) * (baseWeight * 0.04); // 4% variation
-        const patientWeight = Math.max(baseWeight * 0.95, baseWeight + weightVariation);
-        
-        // Height changes for children under 18 (growth over time)
         const baseHeight = patient.height || 0;
+        
+        // For real patient data, height and weight should not change unless medically updated
+        // Only apply variations for mock data or development scenarios
+        let patientWeight = baseWeight;
         let patientHeight = baseHeight;
-        if (baseAge < 18) {
+        
+        // Only simulate growth for children under 18, and only if this appears to be demo/mock data
+        // (Check if patient ID suggests mock data)
+        const isMockData = patient.id.startsWith('patient-') || patient.id.includes('mock');
+        
+        if (isMockData && baseAge < 18) {
           // Children grow: subtract growth for past dates (they were shorter before)
           const monthlyGrowthRate = baseAge < 12 ? 0.6 : baseAge < 16 ? 0.4 : 0.2; // cm per month
           const heightChange = (daysFromToday / 30) * monthlyGrowthRate;
           patientHeight = Math.max(baseHeight * 0.80, baseHeight - heightChange);
-        } else {
-          // Adults have minimal height variation (±0.5cm due to posture, spinal compression)
-          const heightVariation = Math.sin(daysFromToday * 0.1) * 0.5;
-          patientHeight = baseHeight + heightVariation;
+          
+          // Weight may also change with growth in children
+          const weightGrowthFactor = heightChange / baseHeight;
+          patientWeight = Math.max(baseWeight * 0.80, baseWeight - (baseWeight * weightGrowthFactor * 0.5));
         }
+        
+        // For adults (18+), height and weight remain constant in real medical data
+        // Remove artificial variations as these should only change through actual medical updates
         
         const bmi = calculateBMI(patientWeight, patientHeight);
         const weightCategory = getWeightCategory(bmi);
