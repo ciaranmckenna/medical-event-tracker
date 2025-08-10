@@ -66,7 +66,7 @@ The Medical Events Tracker is a secure, role-based application that enables heal
 - **Documentation**: Springdoc OpenAPI (planned)
 
 ### Frontend (Stage 6)
-- **Framework**: React 18+ with TypeScript
+- **Framework**: React 19+ with TypeScript
 - **Build Tool**: Vite 5+ with hot module replacement
 - **State Management**: React Query (server state) + Zustand (client state)
 - **Routing**: React Router v6 with role-based route protection
@@ -136,15 +136,11 @@ The frontend is a modern React application designed for medical professionals an
 2. **Install dependencies**
    ```bash
    npm install
-   # or
-   yarn install
    ```
 
 3. **Start development server**
    ```bash
    npm run dev
-   # or
-   yarn dev
    ```
 
 4. **Access the application**
@@ -248,6 +244,47 @@ frontend/
 | `DELETE` | `/api/auth/profile` | Soft delete user account | ✅ |
 | `GET` | `/api/auth/check-username/{username}` | Check username availability | ❌ |
 | `GET` | `/api/auth/check-email/{email}` | Check email availability | ❌ |
+
+### Patient Management Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/patients` | Create a new patient | ✅ |
+| `GET` | `/api/patients` | Get all patients for user | ✅ |
+| `GET` | `/api/patients/{id}` | Get patient by ID | ✅ |
+| `PUT` | `/api/patients/{id}` | Update patient information | ✅ |
+| `DELETE` | `/api/patients/{id}` | Soft delete patient | ✅ |
+
+### Medical Event Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/medical-events` | Record a new medical event | ✅ |
+| `GET` | `/api/medical-events` | Get medical events with filtering/pagination | ✅ |
+| `GET` | `/api/medical-events/{id}` | Get specific medical event | ✅ |
+| `PUT` | `/api/medical-events/{id}` | Update medical event | ✅ |
+| `DELETE` | `/api/medical-events/{id}` | Delete medical event | ✅ |
+| `POST` | `/api/medical-events/search` | Advanced search with filters | ✅ |
+
+### Medication Dosage Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/medication-dosages` | Record medication dosage | ✅ |
+| `GET` | `/api/medication-dosages` | Get dosages with filtering/pagination | ✅ |
+| `GET` | `/api/medication-dosages/{id}` | Get specific dosage record | ✅ |
+| `PUT` | `/api/medication-dosages/{id}` | Update dosage record | ✅ |
+| `DELETE` | `/api/medication-dosages/{id}` | Delete dosage record | ✅ |
+| `POST` | `/api/medication-dosages/search` | Advanced search with filters | ✅ |
+
+### Analytics & Insights Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/analytics/dashboard/{patientId}` | Get dashboard summary | ✅ |
+| `GET` | `/api/analytics/correlation/{patientId}` | Medication correlation analysis | ✅ |
+| `GET` | `/api/analytics/timeline/{patientId}` | Patient timeline analysis | ✅ |
+| `GET` | `/api/analytics/medication-impact/{patientId}` | Medication effectiveness analysis | ✅ |
 
 ### Example API Usage
 
@@ -370,13 +407,87 @@ src/main/java/com/ciaranmckenna/medical_event_tracker/
 - **Stage 4**: Advanced search and filtering capabilities with pagination
 - **Stage 5**: Data visualization and analytics with correlation analysis
 
-**🔄 In Progress**: 
-- **Stage 6**: Modern React frontend with TypeScript and medical-grade UI components
+**✅ All Stages Completed**: 
+- **Stage 6**: Modern React frontend with TypeScript and medical-grade UI components - **COMPLETED**
 
 **📋 Backend API**: Fully functional REST API with comprehensive analytics endpoints  
-**🎨 Frontend**: Ready for Stage 6 implementation with detailed guidelines and architecture
+**🎨 Frontend**: Complete React 19 + TypeScript application with PWA capabilities, medical-grade UI components, and advanced data visualization
 
 See [MVP-roadmap.md](MVP-roadmap.md) for detailed development plan and [CLAUDE.md](CLAUDE.md) for comprehensive development guidelines.
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### Backend Issues
+
+**Port 8080 already in use:**
+```bash
+# Kill process using port 8080
+lsof -ti:8080 | xargs kill -9
+# Or run on different port
+mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8081
+```
+
+**H2 Database connection issues:**
+- Ensure H2 console is enabled in `application.properties`
+- Use exactly: `jdbc:h2:mem:medicaltracker` for JDBC URL
+- Username: `sa`, Password: (leave empty)
+
+**JWT Token issues:**
+- Verify JWT secret is at least 256 bits (32 characters)
+- Check token expiration settings in `application.properties`
+
+#### Frontend Issues
+
+**npm install fails:**
+```bash
+# Clear npm cache and reinstall
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**CORS errors:**
+- Ensure backend is running on port 8080
+- Check `@CrossOrigin` annotation on controllers
+- Verify frontend API base URL in `.env.local`
+
+**TypeScript errors:**
+```bash
+# Run type checking
+npm run type-check
+# Fix linting issues
+npm run lint:fix
+```
+
+**Build failures:**
+```bash
+# Check for TypeScript errors first
+npm run type-check
+# Then build
+npm run build
+```
+
+### Development Tips
+
+1. **Full Stack Development:**
+   ```bash
+   # Terminal 1: Start backend
+   mvn spring-boot:run
+   
+   # Terminal 2: Start frontend
+   cd frontend && npm run dev
+   ```
+
+2. **Database Inspection:**
+   - H2 Console: http://localhost:8080/h2-console
+   - View all tables and data during development
+
+3. **API Testing:**
+   - Use H2 console to verify data persistence
+   - Check browser network tab for API calls
+   - Use Postman for direct API testing
 
 ## 🤝 Contributing
 
