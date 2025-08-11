@@ -248,6 +248,34 @@ src/main/java/com/medicaltracker/
 - Include example requests/responses for medical data endpoints
 - Document all validation rules and error responses
 
+## System Architecture Reference
+
+### Comprehensive Architecture Documentation
+For detailed system architecture, request flow, and integration patterns, see:
+
+📖 **[System Architecture Documentation](docs/architecture.md)**
+
+This documentation provides:
+- **Complete end-to-end flow diagrams** showing user queries from frontend to backend
+- **Security architecture** with JWT, CORS, and validation layers
+- **Technology stack integration** between React 19 + Spring Boot 3.x
+- **Database design patterns** and entity relationships
+- **Error handling strategies** and validation approaches
+- **Performance considerations** and deployment patterns
+
+**Key Integration Points:**
+- Frontend: React 19 + TypeScript + Vite + React Query + Zustand
+- Backend: Spring Boot 3.x + Spring Security + JPA + JWT
+- Database: H2 (dev) / MySQL (prod) with proper indexing
+- Security: Multi-layer validation and authentication
+
+Always reference this architecture documentation when:
+- Implementing new features that span frontend/backend
+- Adding new API endpoints or modifying existing ones  
+- Working on authentication, authorization, or security features
+- Planning database schema changes or new entities
+- Debugging cross-layer integration issues
+
 ## Communication Guidelines
 
 ### Solution Proposals
