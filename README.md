@@ -16,6 +16,7 @@ A Spring Boot application for tracking medical events and medication responses t
 - [Development](#development)
 - [Security](#security)
 - [Project Structure](#project-structure)
+- [Architecture](#architecture)
 - [Current Status](#current-status)
 - [Contributing](#contributing)
 
@@ -397,6 +398,22 @@ src/main/java/com/ciaranmckenna/medical_event_tracker/
 ├── exception/           # Exception handling (planned)
 └── validation/          # Custom validators (planned)
 ```
+
+## 🏛 Architecture
+
+For a comprehensive understanding of the system architecture and data flow:
+
+📖 **[System Architecture Documentation](docs/architecture.md)**
+
+This detailed documentation covers:
+- **End-to-end request flow** from React frontend to Spring Boot backend
+- **Security architecture** with JWT authentication and CORS handling
+- **Database design** and entity relationships
+- **Error handling** and validation layers
+- **Performance considerations** and deployment architecture
+- **File structure** and key integration points
+
+The architecture follows Spring Boot best practices with clean separation of concerns, comprehensive security, and modern frontend patterns optimized for medical applications.
 
 ## 🚧 Current Status
 
