@@ -1,23 +1,204 @@
-// Medical Event Types for Seizure/Episode Tracking
-export type EventType = 
-  | 'SEIZURE'
-  | 'MEDICATION_REACTION' 
-  | 'SYMPTOM'
+// Backend-aligned Medical Event Types
+export type MedicalEventCategory = 
+  | 'ADVERSE_REACTION'
+  | 'APPOINTMENT'
   | 'EMERGENCY'
-  | 'ROUTINE_CHECK'
-  | 'OTHER';
+  | 'MEDICATION'
+  | 'OBSERVATION'
+  | 'SYMPTOM'
+  | 'TEST';
 
-export type SeizureType = 
-  | 'TONIC_CLONIC'      // Grand mal
-  | 'FOCAL_AWARE'       // Simple partial
-  | 'FOCAL_IMPAIRED'    // Complex partial
-  | 'ABSENCE'           // Petit mal
-  | 'MYOCLONIC'         // Muscle jerks
-  | 'ATONIC'            // Drop attacks
-  | 'UNKNOWN';
+export type MedicalEventSeverity = 'MILD' | 'MODERATE' | 'SEVERE' | 'CRITICAL';
 
-export type SeverityLevel = 'MILD' | 'MODERATE' | 'SEVERE' | 'CRITICAL';
-export type EventStatus = 'ACTIVE' | 'RESOLVED' | 'ONGOING' | 'REQUIRES_FOLLOW_UP';
+export type DosageSchedule = 
+  | 'AM'
+  | 'AS_NEEDED'
+  | 'BEDTIME'
+  | 'CUSTOM'
+  | 'EVERY_12_HOURS'
+  | 'EVERY_4_HOURS'
+  | 'EVERY_6_HOURS'
+  | 'EVERY_8_HOURS'
+  | 'MIDDAY'
+  | 'PM';
+
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+export type UserRole = 'ADMIN' | 'PRIMARY_USER' | 'SECONDARY_USER';
+
+// Backend-aligned Response Interfaces
+export interface MedicalEventResponse {
+  id: string;
+  patientId: string;
+  title: string;
+  description: string;
+  category: MedicalEventCategory;
+  severity: MedicalEventSeverity;
+  eventTime: string;
+  medicationId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MedicationDosageResponse {
+  id: string;
+  patientId: string;
+  medicationId: string;
+  administrationTime: string;
+  dosageAmount: number;
+  dosageUnit: string;
+  schedule: DosageSchedule;
+  administered: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PatientResponse {
+  id: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  gender: Gender;
+  heightCm?: number;
+  weightKg?: number;
+  notes?: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Analytics DTOs matching backend
+export interface MedicationCorrelationAnalysis {
+  medicationId: string;
+  patientId: string;
+  medicationName: string;
+  totalDosages: number;
+  eventsWithin24Hours: number;
+  correlationPercentage: number;
+  correlationStrength: number;
+  eventsByCategory: Record<MedicalEventCategory, number>;
+  eventsBySeverity: Record<MedicalEventSeverity, number>;
+  analysisGeneratedAt: string;
+}
+
+export interface MedicationImpactAnalysis {
+  medicationId: string;
+  patientId: string;
+  medicationName: string;
+  analysisPeriodStart: string;
+  analysisPeriodEnd: string;
+  totalDosages: number;
+  eventsWithin24Hours: number;
+  eventRatePercentage: number;
+  symptomEvents: number;
+  adverseReactionEvents: number;
+  symptomReductionPercentage: number;
+  effectivenessScore: number;
+  weeklyTrends: Record<string, number[]>;
+  analysisGeneratedAt: string;
+}
+
+export interface TimelineDataPoint {
+  timestamp: string;
+  eventType: 'EVENT' | 'DOSAGE';
+  description: string;
+  value?: number;
+  unit?: string;
+  severity?: MedicalEventSeverity;
+}
+
+export interface TimelineAnalysis {
+  patientId: string;
+  periodStart: string;
+  periodEnd: string;
+  dataPoints: TimelineDataPoint[];
+  generatedAt: string;
+}
+
+export interface DashboardSummary {
+  patientId: string;
+  totalEvents: number;
+  totalDosages: number;
+  recentEvents: number;
+  recentDosages: number;
+  eventsByCategory: Record<MedicalEventCategory, number>;
+  eventsBySeverity: Record<MedicalEventSeverity, number>;
+  weeklyStatistics: Record<string, number>;
+  generatedAt: string;
+}
+
+// Request DTOs
+export interface CreateMedicalEventRequest {
+  patientId: string;
+  title: string;
+  description: string;
+  category: MedicalEventCategory;
+  severity: MedicalEventSeverity;
+  eventTime: string;
+  medicationId?: string;
+}
+
+export interface CreateMedicationDosageRequest {
+  patientId: string;
+  medicationId: string;
+  administrationTime: string;
+  dosageAmount: number;
+  dosageUnit: string;
+  schedule: DosageSchedule;
+  notes?: string;
+}
+
+export interface PatientCreateRequest {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  gender: Gender;
+  heightCm?: number;
+  weightKg?: number;
+  notes?: string;
+}
+
+// Auth DTOs
+export interface LoginRequest {
+  usernameOrEmail: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface AuthResponse {
+  id: string | UUID;  // Backend sends UUID, frontend converts to string
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  token: string;
+  expiresAt: string | LocalDateTime;  // Backend sends LocalDateTime, frontend converts to string
+  tokenType: string;
+}
+
+// Helper type for UUID handling
+type UUID = string;
+type LocalDateTime = string;
+
+export interface UserProfileResponse {
+  id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  enabled: boolean;
+  createdAt: string;
+}
 
 // Enhanced Medical Event Interface for Seizure Tracking
 export interface MedicalEvent {
@@ -139,13 +320,14 @@ export const SEVERITY_LEVELS = {
   CRITICAL: { label: 'Critical', color: '#dc2626', priority: 4 }
 } as const;
 
-export const EVENT_CATEGORIES = {
-  SYMPTOM: { label: 'Symptom', color: '#06b6d4', icon: '🩺' },
-  SIDE_EFFECT: { label: 'Side Effect', color: '#f59e0b', icon: '⚠️' },
+export const MEDICAL_EVENT_CATEGORIES = {
   ADVERSE_REACTION: { label: 'Adverse Reaction', color: '#dc2626', icon: '🚨' },
-  OBSERVATION: { label: 'Observation', color: '#10b981', icon: '👁️' },
+  APPOINTMENT: { label: 'Appointment', color: '#06b6d4', icon: '📅' },
   EMERGENCY: { label: 'Emergency', color: '#dc2626', icon: '🚑' },
-  MEDICATION: { label: 'Medication', color: '#8b5cf6', icon: '💊' }
+  MEDICATION: { label: 'Medication', color: '#8b5cf6', icon: '💊' },
+  OBSERVATION: { label: 'Observation', color: '#10b981', icon: '👁️' },
+  SYMPTOM: { label: 'Symptom', color: '#06b6d4', icon: '🩺' },
+  TEST: { label: 'Test', color: '#f59e0b', icon: '🧪' }
 } as const;
 
 export const MEDICATION_FREQUENCIES = {
@@ -157,6 +339,14 @@ export const MEDICATION_FREQUENCIES = {
 
 export const DOSAGE_SCHEDULES = {
   AM: { label: 'Morning', time: '08:00' },
+  AS_NEEDED: { label: 'As Needed', time: null },
+  BEDTIME: { label: 'Bedtime', time: '22:00' },
+  CUSTOM: { label: 'Custom', time: null },
+  EVERY_12_HOURS: { label: 'Every 12 Hours', time: null },
+  EVERY_4_HOURS: { label: 'Every 4 Hours', time: null },
+  EVERY_6_HOURS: { label: 'Every 6 Hours', time: null },
+  EVERY_8_HOURS: { label: 'Every 8 Hours', time: null },
+  MIDDAY: { label: 'Midday', time: '12:00' },
   PM: { label: 'Evening', time: '20:00' }
 } as const;
 

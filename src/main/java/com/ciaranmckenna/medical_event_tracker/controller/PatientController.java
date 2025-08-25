@@ -3,6 +3,7 @@ package com.ciaranmckenna.medical_event_tracker.controller;
 import com.ciaranmckenna.medical_event_tracker.dto.PatientCreateRequest;
 import com.ciaranmckenna.medical_event_tracker.dto.PatientResponse;
 import com.ciaranmckenna.medical_event_tracker.dto.PatientUpdateRequest;
+import com.ciaranmckenna.medical_event_tracker.dto.PaginatedResponse;
 import com.ciaranmckenna.medical_event_tracker.entity.User;
 import com.ciaranmckenna.medical_event_tracker.exception.DuplicatePatientException;
 import com.ciaranmckenna.medical_event_tracker.exception.PatientNotFoundException;
@@ -35,10 +36,13 @@ public class PatientController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PatientResponse>> getActivePatients(
-            @AuthenticationPrincipal User user) {
+    public ResponseEntity<PaginatedResponse<PatientResponse>> getActivePatients(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
         List<PatientResponse> patients = patientService.getActivePatients(user);
-        return ResponseEntity.ok(patients);
+        PaginatedResponse<PatientResponse> response = PaginatedResponse.of(patients, page, size);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/all")

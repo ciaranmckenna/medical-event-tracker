@@ -3,7 +3,7 @@ import { MedicationCard } from '../../components/medical/MedicationCard';
 import { MedicationForm } from '../../components/forms/MedicationForm';
 import { medicationService } from '../../services/api/medicationService';
 import { patientService } from '../../services/api/patientService';
-import type { Medication, Patient, PaginatedResponse } from '../../types/api';
+import type { Medication, MedicationCatalog, Patient, PaginatedResponse } from '../../types/api';
 import type { MedicationFormData } from '../../services/validation/medicationValidation';
 
 type ViewMode = 'list' | 'add' | 'edit' | 'view' | 'record-dose';
@@ -14,11 +14,15 @@ const MOCK_PATIENTS: Patient[] = [
     id: '1',
     firstName: 'John',
     lastName: 'Doe',
+    fullName: 'John Doe',
     dateOfBirth: '1985-06-15',
-    height: 180,
-    weight: 75,
-    emergencyContact: 'Jane Doe',
-    emergencyPhone: '+1-555-0123',
+    ageInYears: 38,
+    gender: 'MALE',
+    heightCm: 180,
+    weightKg: 75,
+    bmi: 23.1,
+    active: true,
+    activeMedicationCount: 2,
     notes: 'No known allergies',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z'
@@ -27,57 +31,58 @@ const MOCK_PATIENTS: Patient[] = [
     id: '2',
     firstName: 'Sarah',
     lastName: 'Smith',
+    fullName: 'Sarah Smith',
     dateOfBirth: '1992-03-22',
-    height: 165,
-    weight: 60,
-    emergencyContact: 'Michael Smith',
-    emergencyPhone: '+1-555-0456',
+    ageInYears: 31,
+    gender: 'FEMALE',
+    heightCm: 165,
+    weightKg: 60,
+    bmi: 22.0,
+    active: true,
+    activeMedicationCount: 1,
     notes: 'Allergic to penicillin',
     createdAt: '2024-01-02T00:00:00Z',
     updatedAt: '2024-01-02T00:00:00Z'
   }
 ];
 
-const MOCK_MEDICATIONS: Medication[] = [
+const MOCK_CATALOG_MEDICATIONS: MedicationCatalog[] = [
   {
     id: '1',
-    patientId: '1',
     name: 'Paracetamol',
-    dosage: 500,
+    genericName: 'Acetaminophen',
+    type: 'TABLET',
+    strength: 500,
     unit: 'mg',
-    frequency: 'TWICE_DAILY',
-    startDate: '2024-01-01',
-    endDate: '2024-12-31',
+    manufacturer: 'Generic Pharma',
+    description: 'Pain reliever and fever reducer',
     active: true,
-    notes: 'Take with food to avoid stomach upset',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z'
   },
   {
     id: '2',
-    patientId: '1',
     name: 'Ibuprofen',
-    dosage: 200,
+    genericName: 'Ibuprofen',
+    type: 'TABLET',
+    strength: 200,
     unit: 'mg',
-    frequency: 'AS_NEEDED',
-    startDate: '2024-01-15',
-    endDate: '',
+    manufacturer: 'Advil',
+    description: 'Anti-inflammatory pain reliever',
     active: true,
-    notes: 'For pain relief as needed',
     createdAt: '2024-01-15T00:00:00Z',
     updatedAt: '2024-01-15T00:00:00Z'
   },
   {
     id: '3',
-    patientId: '2',
     name: 'Amoxicillin',
-    dosage: 250,
+    genericName: 'Amoxicillin',
+    type: 'CAPSULE',
+    strength: 250,
     unit: 'mg',
-    frequency: 'THREE_TIMES_DAILY',
-    startDate: '2024-01-10',
-    endDate: '2024-01-20',
+    manufacturer: 'Generic Antibiotics Ltd',
+    description: 'Antibiotic for bacterial infections',
     active: false,
-    notes: 'Completed antibiotic course',
     createdAt: '2024-01-10T00:00:00Z',
     updatedAt: '2024-01-20T00:00:00Z'
   }
@@ -85,9 +90,9 @@ const MOCK_MEDICATIONS: Medication[] = [
 
 export const MedicationsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [medications, setMedications] = useState<Medication[]>([]);
+  const [medications, setMedications] = useState<MedicationCatalog[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
+  const [selectedMedication, setSelectedMedication] = useState<MedicationCatalog | null>(null);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -107,11 +112,9 @@ export const MedicationsPage: React.FC = () => {
     try {
       if (useMockData) {
         // Use mock data
-        let filteredMedications = MOCK_MEDICATIONS;
+        let filteredMedications = MOCK_CATALOG_MEDICATIONS;
         
-        if (selectedPatientId) {
-          filteredMedications = filteredMedications.filter(m => m.patientId === selectedPatientId);
-        }
+        // Catalog medications don't have patientId, so skip patient filtering
         
         if (filterActive !== undefined) {
           filteredMedications = filteredMedications.filter(m => m.active === filterActive);
@@ -127,9 +130,8 @@ export const MedicationsPage: React.FC = () => {
         setMedications(filteredMedications);
       } else {
         // Try to load from API
-        const response: PaginatedResponse<Medication> = await medicationService.getMedications({
+        const response: PaginatedResponse<MedicationCatalog> = await medicationService.getMedications({
           medicationName: searchTerm || undefined,
-          patientId: selectedPatientId || undefined,
           active: filterActive
         });
         setMedications(response.content);
@@ -167,23 +169,22 @@ export const MedicationsPage: React.FC = () => {
 
   const handleAddMedication = async (data: MedicationFormData) => {
     if (useMockData) {
-      // Simulate adding medication with mock data
-      const newMedication: Medication = {
-        id: (MOCK_MEDICATIONS.length + 1).toString(),
-        patientId: data.patientId,
+      // Simulate adding catalog medication with mock data
+      const newMedication: MedicationCatalog = {
+        id: (MOCK_CATALOG_MEDICATIONS.length + 1).toString(),
         name: data.name,
-        dosage: data.dosage,
+        genericName: data.genericName,
+        type: data.type,
+        strength: data.strength,
         unit: data.unit,
-        frequency: data.frequency,
-        startDate: data.startDate,
-        endDate: data.endDate || '',
+        manufacturer: data.manufacturer,
+        description: data.description,
         active: true,
-        notes: data.notes || '',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       
-      MOCK_MEDICATIONS.push(newMedication);
+      MOCK_CATALOG_MEDICATIONS.push(newMedication);
       await loadMedications();
       setViewMode('list');
       return;
@@ -203,19 +204,18 @@ export const MedicationsPage: React.FC = () => {
     if (!selectedMedication) return;
     
     if (useMockData) {
-      // Simulate editing medication with mock data
-      const index = MOCK_MEDICATIONS.findIndex(m => m.id === selectedMedication.id);
+      // Simulate editing catalog medication with mock data
+      const index = MOCK_CATALOG_MEDICATIONS.findIndex(m => m.id === selectedMedication.id);
       if (index !== -1) {
-        MOCK_MEDICATIONS[index] = {
-          ...MOCK_MEDICATIONS[index],
-          patientId: data.patientId,
+        MOCK_CATALOG_MEDICATIONS[index] = {
+          ...MOCK_CATALOG_MEDICATIONS[index],
           name: data.name,
-          dosage: data.dosage,
+          genericName: data.genericName,
+          type: data.type,
+          strength: data.strength,
           unit: data.unit,
-          frequency: data.frequency,
-          startDate: data.startDate,
-          endDate: data.endDate || '',
-          notes: data.notes || '',
+          manufacturer: data.manufacturer,
+          description: data.description,
           updatedAt: new Date().toISOString()
         };
       }
@@ -240,12 +240,12 @@ export const MedicationsPage: React.FC = () => {
     }
   };
 
-  const handleDeleteMedication = async (medication: Medication) => {
+  const handleDeleteMedication = async (medication: MedicationCatalog) => {
     if (useMockData) {
-      // Simulate deleting medication with mock data
-      const index = MOCK_MEDICATIONS.findIndex(m => m.id === medication.id);
+      // Simulate deleting catalog medication with mock data
+      const index = MOCK_CATALOG_MEDICATIONS.findIndex(m => m.id === medication.id);
       if (index !== -1) {
-        MOCK_MEDICATIONS.splice(index, 1);
+        MOCK_CATALOG_MEDICATIONS.splice(index, 1);
       }
       await loadMedications();
       return;
@@ -263,14 +263,10 @@ export const MedicationsPage: React.FC = () => {
     await loadMedications();
   };
 
-  const handlePatientFilter = (patientId: string) => {
-    setSelectedPatientId(patientId);
-  };
-
   // Reload when filters change
   useEffect(() => {
     loadMedications();
-  }, [selectedPatientId, filterActive, useMockData]);
+  }, [filterActive, useMockData]);
 
   const filteredMedications = medications;
 
@@ -520,18 +516,7 @@ export const MedicationsPage: React.FC = () => {
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
         />
         
-        <select
-          value={selectedPatientId}
-          onChange={(e) => handlePatientFilter(e.target.value)}
-          style={selectStyle}
-        >
-          <option value="">All Patients</option>
-          {patients?.map((patient) => (
-            <option key={patient.id} value={patient.id}>
-              {patientService.formatPatientName(patient)} ({patientService.calculateAge(patient.dateOfBirth)} years old)
-            </option>
-          ))}
-        </select>
+        {/* Patient filter removed for medication catalog */}
 
         <div>
           <button 
@@ -558,11 +543,10 @@ export const MedicationsPage: React.FC = () => {
           🔍 Search
         </button>
         
-        {(searchTerm || selectedPatientId) && (
+        {searchTerm && (
           <button 
             onClick={() => { 
               setSearchTerm(''); 
-              setSelectedPatientId(''); 
               setFilterActive(true);
             }} 
             style={{...buttonStyle, backgroundColor: '#6c757d', color: 'white'}}
@@ -584,7 +568,7 @@ export const MedicationsPage: React.FC = () => {
         </div>
       ) : filteredMedications.length === 0 ? (
         <div style={emptyStateStyle}>
-          {searchTerm || selectedPatientId ? (
+          {searchTerm ? (
             <>
               <h3>No medications found</h3>
               <p>Try adjusting your search or filters, or add a new medication.</p>
@@ -604,7 +588,6 @@ export const MedicationsPage: React.FC = () => {
           <div style={{ marginBottom: '20px', color: '#666' }}>
             Showing {filteredMedications.length} medication{filteredMedications.length !== 1 ? 's' : ''}
             {filterActive !== undefined && ` (${filterActive ? 'Active' : 'Inactive'} only)`}
-            {selectedPatientId && ` for selected patient`}
             {searchTerm && ` matching "${searchTerm}"`}
           </div>
           
