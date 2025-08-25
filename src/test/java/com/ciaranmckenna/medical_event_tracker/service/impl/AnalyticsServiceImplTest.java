@@ -2,9 +2,10 @@ package com.ciaranmckenna.medical_event_tracker.service.impl;
 
 import com.ciaranmckenna.medical_event_tracker.dto.*;
 import com.ciaranmckenna.medical_event_tracker.entity.*;
-import com.ciaranmckenna.medical_event_tracker.repository.MedicalEventRepository;
-import com.ciaranmckenna.medical_event_tracker.repository.MedicationDosageRepository;
 import com.ciaranmckenna.medical_event_tracker.service.AnalyticsService;
+import com.ciaranmckenna.medical_event_tracker.service.CorrelationService;
+import com.ciaranmckenna.medical_event_tracker.service.DashboardService;
+import com.ciaranmckenna.medical_event_tracker.service.TimelineService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,8 +19,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 /**
@@ -30,10 +29,13 @@ import static org.mockito.Mockito.when;
 class AnalyticsServiceImplTest {
 
     @Mock
-    private MedicalEventRepository medicalEventRepository;
+    private CorrelationService correlationService;
 
     @Mock
-    private MedicationDosageRepository medicationDosageRepository;
+    private DashboardService dashboardService;
+
+    @Mock
+    private TimelineService timelineService;
 
     private AnalyticsService analyticsService;
 
@@ -43,7 +45,7 @@ class AnalyticsServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        analyticsService = new AnalyticsServiceImpl(medicalEventRepository, medicationDosageRepository);
+        analyticsService = new AnalyticsServiceImpl(correlationService, dashboardService, timelineService);
         testPatientId = UUID.randomUUID();
         testMedicationId = UUID.randomUUID();
         testTime = LocalDateTime.now();
@@ -52,13 +54,9 @@ class AnalyticsServiceImplTest {
     @Test
     void generateMedicationCorrelationAnalysis_Success() {
         // Given
-        List<MedicationDosage> dosages = createTestDosages();
-        List<MedicalEvent> events = createTestEvents();
-        
-        when(medicationDosageRepository.findByPatientIdAndMedicationId(testPatientId, testMedicationId))
-                .thenReturn(dosages);
-        when(medicalEventRepository.findByPatientIdAndEventTimeBetween(eq(testPatientId), any(), any()))
-                .thenReturn(events);
+        MedicationCorrelationAnalysis expectedAnalysis = createTestCorrelationAnalysis();
+        when(correlationService.generateMedicationCorrelationAnalysis(testPatientId, testMedicationId))
+                .thenReturn(expectedAnalysis);
 
         // When
         MedicationCorrelationAnalysis result = analyticsService.generateMedicationCorrelationAnalysis(
@@ -79,12 +77,9 @@ class AnalyticsServiceImplTest {
     @Test
     void generateDashboardSummary_Success() {
         // Given
-        when(medicalEventRepository.countByPatientId(testPatientId)).thenReturn(25L);
-        when(medicationDosageRepository.countByPatientId(testPatientId)).thenReturn(15L);
-        when(medicalEventRepository.countByPatientIdAndEventTimeAfter(eq(testPatientId), any()))
-                .thenReturn(5L);
-        when(medicalEventRepository.findByPatientId(testPatientId))
-                .thenReturn(createTestEvents());
+        DashboardSummary expectedSummary = createTestDashboardSummary();
+        when(dashboardService.generateDashboardSummary(testPatientId))
+                .thenReturn(expectedSummary);
 
         // When
         DashboardSummary result = analyticsService.generateDashboardSummary(testPatientId);
@@ -105,14 +100,10 @@ class AnalyticsServiceImplTest {
         // Given
         LocalDateTime startDate = LocalDateTime.now().minusDays(7);
         LocalDateTime endDate = LocalDateTime.now();
+        TimelineAnalysis expectedTimeline = createTestTimelineAnalysis(startDate, endDate);
         
-        List<MedicalEvent> events = createTestEvents();
-        List<MedicationDosage> dosages = createTestDosages();
-        
-        when(medicalEventRepository.findByPatientIdAndEventTimeBetween(testPatientId, startDate, endDate))
-                .thenReturn(events);
-        when(medicationDosageRepository.findByPatientIdAndAdministrationTimeBetween(testPatientId, startDate, endDate))
-                .thenReturn(dosages);
+        when(timelineService.generateTimelineAnalysis(testPatientId, startDate, endDate))
+                .thenReturn(expectedTimeline);
 
         // When
         TimelineAnalysis result = analyticsService.generateTimelineAnalysis(testPatientId, startDate, endDate);
@@ -132,23 +123,10 @@ class AnalyticsServiceImplTest {
         // Given
         LocalDateTime startDate = LocalDateTime.now().minusDays(30);
         LocalDateTime endDate = LocalDateTime.now();
+        MedicationImpactAnalysis expectedImpact = createTestMedicationImpactAnalysis(startDate, endDate);
         
-        List<MedicationDosage> dosages = createTestDosages();
-        List<MedicalEvent> eventsAfterDosages = createTestEvents();
-        List<MedicalEvent> symptomEvents = List.of(createSymptomEvent());
-        List<MedicalEvent> adverseEvents = List.of(createAdverseReactionEvent());
-        
-        when(medicationDosageRepository.findByPatientIdAndMedicationIdAndAdministrationTimeBetween(
-                testPatientId, testMedicationId, startDate, endDate))
-                .thenReturn(dosages);
-        when(medicalEventRepository.findByPatientIdAndEventTimeBetween(eq(testPatientId), any(), any()))
-                .thenReturn(eventsAfterDosages);
-        when(medicalEventRepository.findByPatientIdAndCategoryAndEventTimeBetween(
-                testPatientId, MedicalEventCategory.SYMPTOM, startDate, endDate))
-                .thenReturn(symptomEvents);
-        when(medicalEventRepository.findByPatientIdAndCategoryAndEventTimeBetween(
-                testPatientId, MedicalEventCategory.ADVERSE_REACTION, startDate, endDate))
-                .thenReturn(adverseEvents);
+        when(correlationService.generateMedicationImpactAnalysis(testPatientId, testMedicationId, startDate, endDate))
+                .thenReturn(expectedImpact);
 
         // When
         MedicationImpactAnalysis result = analyticsService.generateMedicationImpactAnalysis(
@@ -172,8 +150,9 @@ class AnalyticsServiceImplTest {
     @Test
     void generateMedicationCorrelationAnalysis_NoData_ReturnsEmptyAnalysis() {
         // Given
-        when(medicationDosageRepository.findByPatientIdAndMedicationId(testPatientId, testMedicationId))
-                .thenReturn(List.of());
+        MedicationCorrelationAnalysis emptyAnalysis = createEmptyCorrelationAnalysis();
+        when(correlationService.generateMedicationCorrelationAnalysis(testPatientId, testMedicationId))
+                .thenReturn(emptyAnalysis);
 
         // When
         MedicationCorrelationAnalysis result = analyticsService.generateMedicationCorrelationAnalysis(
@@ -194,11 +173,10 @@ class AnalyticsServiceImplTest {
         // Given
         LocalDateTime startDate = LocalDateTime.now().minusDays(1);
         LocalDateTime endDate = LocalDateTime.now();
+        TimelineAnalysis emptyTimeline = createEmptyTimelineAnalysis(startDate, endDate);
         
-        when(medicalEventRepository.findByPatientIdAndEventTimeBetween(testPatientId, startDate, endDate))
-                .thenReturn(List.of());
-        when(medicationDosageRepository.findByPatientIdAndAdministrationTimeBetween(testPatientId, startDate, endDate))
-                .thenReturn(List.of());
+        when(timelineService.generateTimelineAnalysis(testPatientId, startDate, endDate))
+                .thenReturn(emptyTimeline);
 
         // When
         TimelineAnalysis result = analyticsService.generateTimelineAnalysis(testPatientId, startDate, endDate);
@@ -211,66 +189,99 @@ class AnalyticsServiceImplTest {
         assertEquals(0, result.getTotalDosages());
     }
 
-    private List<MedicationDosage> createTestDosages() {
-        MedicationDosage dosage1 = new MedicationDosage();
-        dosage1.setId(UUID.randomUUID());
-        dosage1.setPatientId(testPatientId);
-        dosage1.setMedicationId(testMedicationId);
-        dosage1.setAdministrationTime(testTime.minusHours(6));
-        dosage1.setDosageAmount(new BigDecimal("500.0"));
-        dosage1.setDosageUnit("mg");
-        dosage1.setSchedule(DosageSchedule.AM);
-
-        MedicationDosage dosage2 = new MedicationDosage();
-        dosage2.setId(UUID.randomUUID());
-        dosage2.setPatientId(testPatientId);
-        dosage2.setMedicationId(testMedicationId);
-        dosage2.setAdministrationTime(testTime.minusHours(12));
-        dosage2.setDosageAmount(new BigDecimal("500.0"));
-        dosage2.setDosageUnit("mg");
-        dosage2.setSchedule(DosageSchedule.PM);
-
-        MedicationDosage dosage3 = new MedicationDosage();
-        dosage3.setId(UUID.randomUUID());
-        dosage3.setPatientId(testPatientId);
-        dosage3.setMedicationId(testMedicationId);
-        dosage3.setAdministrationTime(testTime.minusHours(18));
-        dosage3.setDosageAmount(new BigDecimal("500.0"));
-        dosage3.setDosageUnit("mg");
-        dosage3.setSchedule(DosageSchedule.AM);
-
-        return List.of(dosage1, dosage2, dosage3);
+    private MedicationCorrelationAnalysis createTestCorrelationAnalysis() {
+        return new MedicationCorrelationAnalysis(
+                testMedicationId,
+                testPatientId,
+                "Test Medication",
+                3L,
+                2L,
+                66.67,
+                0.75,
+                Map.of(MedicalEventCategory.SYMPTOM, 1L, MedicalEventCategory.ADVERSE_REACTION, 1L),
+                Map.of(MedicalEventSeverity.MILD, 1L, MedicalEventSeverity.MODERATE, 1L),
+                testTime
+        );
     }
 
-    private List<MedicalEvent> createTestEvents() {
-        MedicalEvent event1 = createSymptomEvent();
-        MedicalEvent event2 = createAdverseReactionEvent();
-        return List.of(event1, event2);
+    private MedicationCorrelationAnalysis createEmptyCorrelationAnalysis() {
+        return new MedicationCorrelationAnalysis(
+                testMedicationId,
+                testPatientId,
+                "Test Medication",
+                0L,
+                0L,
+                0.0,
+                0.0,
+                Map.of(),
+                Map.of(),
+                testTime
+        );
     }
 
-    private MedicalEvent createSymptomEvent() {
-        MedicalEvent event = new MedicalEvent();
-        event.setId(UUID.randomUUID());
-        event.setPatientId(testPatientId);
-        event.setMedicationId(testMedicationId);
-        event.setEventTime(testTime.minusHours(4));
-        event.setTitle("Mild headache");
-        event.setDescription("Patient reported mild headache 2 hours after medication");
-        event.setSeverity(MedicalEventSeverity.MILD);
-        event.setCategory(MedicalEventCategory.SYMPTOM);
-        return event;
+    private DashboardSummary createTestDashboardSummary() {
+        return new DashboardSummary(
+                testPatientId,
+                25L,
+                15L,
+                Map.of(MedicalEventCategory.SYMPTOM, 15L, MedicalEventCategory.ADVERSE_REACTION, 10L),
+                Map.of(MedicalEventSeverity.MILD, 10L, MedicalEventSeverity.MODERATE, 10L, MedicalEventSeverity.SEVERE, 5L),
+                5L,
+                testTime
+        );
     }
 
-    private MedicalEvent createAdverseReactionEvent() {
-        MedicalEvent event = new MedicalEvent();
-        event.setId(UUID.randomUUID());
-        event.setPatientId(testPatientId);
-        event.setMedicationId(testMedicationId);
-        event.setEventTime(testTime.minusHours(8));
-        event.setTitle("Nausea");
-        event.setDescription("Patient experienced nausea after medication");
-        event.setSeverity(MedicalEventSeverity.MODERATE);
-        event.setCategory(MedicalEventCategory.ADVERSE_REACTION);
-        return event;
+    private TimelineAnalysis createTestTimelineAnalysis(LocalDateTime startDate, LocalDateTime endDate) {
+        List<TimelineDataPoint> dataPoints = List.of(
+                new TimelineDataPoint(testTime.minusHours(4), "EVENT", "Mild headache", new BigDecimal("0"), null, MedicalEventSeverity.MILD),
+                new TimelineDataPoint(testTime.minusHours(8), "EVENT", "Nausea", new BigDecimal("0"), null, MedicalEventSeverity.MODERATE),
+                new TimelineDataPoint(testTime.minusHours(6), "DOSAGE", "500mg medication", new BigDecimal("500"), "mg", null),
+                new TimelineDataPoint(testTime.minusHours(12), "DOSAGE", "500mg medication", new BigDecimal("500"), "mg", null),
+                new TimelineDataPoint(testTime.minusHours(18), "DOSAGE", "500mg medication", new BigDecimal("500"), "mg", null)
+        );
+        
+        return new TimelineAnalysis(
+                testPatientId,
+                startDate,
+                endDate,
+                dataPoints,
+                testTime
+        );
+    }
+
+    private TimelineAnalysis createEmptyTimelineAnalysis(LocalDateTime startDate, LocalDateTime endDate) {
+        return new TimelineAnalysis(
+                testPatientId,
+                startDate,
+                endDate,
+                List.of(),
+                testTime
+        );
+    }
+
+    private MedicationImpactAnalysis createTestMedicationImpactAnalysis(LocalDateTime startDate, LocalDateTime endDate) {
+        Map<String, List<Long>> weeklyTrends = Map.of(
+                "week1", List.of(2L, 1L),
+                "week2", List.of(1L, 0L),
+                "week3", List.of(0L, 1L),
+                "week4", List.of(1L, 0L)
+        );
+        
+        return new MedicationImpactAnalysis(
+                testMedicationId,
+                testPatientId,
+                "Test Medication",
+                startDate,
+                endDate,
+                3L,
+                2L,
+                66.67,
+                1L,
+                1L,
+                75.0,
+                0.8,
+                weeklyTrends,
+                testTime
+        );
     }
 }

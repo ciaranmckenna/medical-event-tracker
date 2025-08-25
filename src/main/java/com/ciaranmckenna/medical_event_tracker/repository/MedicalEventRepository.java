@@ -179,4 +179,48 @@ public interface MedicalEventRepository extends JpaRepository<MedicalEvent, UUID
                                                                    MedicalEventCategory category,
                                                                    LocalDateTime startTime, 
                                                                    LocalDateTime endTime);
+
+    /**
+     * Find medical events for a patient linked to a specific medication within a time range.
+     *
+     * @param patientId the patient's UUID
+     * @param medicationId the medication's UUID
+     * @param startTime the start of the time range
+     * @param endTime the end of the time range
+     * @return list of medical events linked to the medication within the time range
+     */
+    List<MedicalEvent> findByPatientIdAndMedicationIdAndEventTimeBetween(UUID patientId, 
+                                                                        UUID medicationId,
+                                                                        LocalDateTime startTime, 
+                                                                        LocalDateTime endTime);
+
+    /**
+     * Count medical events for a patient within a time range.
+     *
+     * @param patientId the patient's UUID
+     * @param startTime the start of the time range
+     * @param endTime the end of the time range
+     * @return count of medical events within the time range
+     */
+    long countByPatientIdAndEventTimeBetween(UUID patientId, 
+                                           LocalDateTime startTime, 
+                                           LocalDateTime endTime);
+
+    /**
+     * Get medical events grouped by category for a patient.
+     *
+     * @param patientId the patient's UUID
+     * @return map of category to count
+     */
+    @Query("SELECT me.category, COUNT(me) FROM MedicalEvent me WHERE me.patientId = :patientId GROUP BY me.category")
+    List<Object[]> countByPatientIdGroupByCategory(@Param("patientId") UUID patientId);
+
+    /**
+     * Get medical events grouped by severity for a patient.
+     *
+     * @param patientId the patient's UUID
+     * @return map of severity to count
+     */
+    @Query("SELECT me.severity, COUNT(me) FROM MedicalEvent me WHERE me.patientId = :patientId GROUP BY me.severity")
+    List<Object[]> countByPatientIdGroupBySeverity(@Param("patientId") UUID patientId);
 }

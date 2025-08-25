@@ -417,7 +417,7 @@ const MOCK_DOSAGE_RECORDS: DosageRecord[] = [
 
 export class DosageService {
   private readonly baseUrl = '/api/dosages';
-  private useMockData = true; // Force mock data for frontend development
+  private useMockData = false; // Use real API data
 
   // Get dosage records with pagination and search
   async getDosageRecords(params: DosageSearchParams = {}): Promise<PaginatedResponse<DosageRecord>> {

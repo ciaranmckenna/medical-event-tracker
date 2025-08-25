@@ -20,6 +20,10 @@ const FREQUENCY_OPTIONS = [
   'AS_NEEDED'
 ] as const;
 
+const MEDICATION_TYPES = [
+  'TABLET', 'CAPSULE', 'LIQUID', 'INJECTION', 'TOPICAL', 'INHALER', 'PATCH', 'SUPPOSITORY', 'OTHER'
+] as const;
+
 const COMMON_UNITS = [
   'mg', 'g', 'ml', 'tablets', 'capsules', 'drops', 'puffs', 'patches', 'units'
 ];
@@ -44,44 +48,25 @@ export const MedicationForm: React.FC<MedicationFormProps> = ({
   } = useForm<MedicationFormData>({
     resolver: zodResolver(medicationSchema),
     defaultValues: medication ? {
-      patientId: medication.patientId,
       name: medication.name,
-      dosage: medication.dosage,
-      unit: medication.unit,
-      frequency: medication.frequency,
-      startDate: medication.startDate,
-      endDate: medication.endDate || '',
-      notes: medication.notes || ''
-    } : {
-      patientId: selectedPatientId || '',
-      name: '',
-      dosage: 0,
+      type: 'TABLET' as const,
+      genericName: '',
+      strength: 0,
       unit: '',
-      frequency: 'ONCE_DAILY' as const,
-      startDate: new Date().toISOString().split('T')[0], // Today's date
-      endDate: '',
-      notes: ''
+      manufacturer: '',
+      description: ''
+    } : {
+      name: '',
+      type: 'TABLET' as const,
+      genericName: '',
+      strength: 0,
+      unit: '',
+      manufacturer: '',
+      description: ''
     }
   });
 
-  const selectedFrequency = watch('frequency');
-
-  // Load patients for dropdown
-  useEffect(() => {
-    const loadPatients = async () => {
-      setLoadingPatients(true);
-      try {
-        const response = await patientService.getPatients();
-        setPatients(response.content);
-      } catch (error) {
-        console.error('Failed to load patients:', error);
-      } finally {
-        setLoadingPatients(false);
-      }
-    };
-
-    loadPatients();
-  }, []);
+  // No need to load patients for medication catalog
 
   const handleFormSubmit = async (data: MedicationFormData) => {
     setErrorMessage('');
@@ -176,31 +161,6 @@ export const MedicationForm: React.FC<MedicationFormProps> = ({
       )}
 
       <div style={{ marginBottom: '20px', textAlign: 'left' }}>
-        <label htmlFor="patientId" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-          Patient *
-        </label>
-        <select
-          id="patientId"
-          style={selectStyle}
-          {...register('patientId')}
-          disabled={!!selectedPatientId || loadingPatients}
-          aria-invalid={!!errors.patientId}
-        >
-          <option value="">
-            {loadingPatients ? 'Loading patients...' : 'Select a patient'}
-          </option>
-          {patients.map((patient) => (
-            <option key={patient.id} value={patient.id}>
-              {patientService.formatPatientName(patient)} ({patientService.calculateAge(patient.dateOfBirth)} years old)
-            </option>
-          ))}
-        </select>
-        {errors.patientId && (
-          <div style={errorStyle}>{errors.patientId.message}</div>
-        )}
-      </div>
-
-      <div style={{ marginBottom: '20px', textAlign: 'left' }}>
         <label htmlFor="name" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
           Medication Name *
         </label>
@@ -220,30 +180,75 @@ export const MedicationForm: React.FC<MedicationFormProps> = ({
         </div>
       </div>
 
+      <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+        <label htmlFor="type" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+          Medication Type *
+        </label>
+        <select
+          id="type"
+          style={selectStyle}
+          {...register('type')}
+          aria-invalid={!!errors.type}
+        >
+          <option value="">Select medication type</option>
+          {MEDICATION_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {type.charAt(0) + type.slice(1).toLowerCase().replace('_', ' ')}
+            </option>
+          ))}
+        </select>
+        {errors.type && (
+          <div style={errorStyle}>{errors.type.message}</div>
+        )}
+        <div style={helpTextStyle}>
+          Choose the form of medication (tablet, liquid, etc.)
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+        <label htmlFor="genericName" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+          Generic Name
+        </label>
+        <input
+          id="genericName"
+          type="text"
+          style={inputStyle}
+          placeholder="Enter generic name (optional)"
+          {...register('genericName')}
+          aria-invalid={!!errors.genericName}
+        />
+        {errors.genericName && (
+          <div style={errorStyle}>{errors.genericName.message}</div>
+        )}
+        <div style={helpTextStyle}>
+          Example: Acetaminophen (for Paracetamol)
+        </div>
+      </div>
+
       <div style={rowStyle}>
         <div style={halfWidthStyle}>
-          <label htmlFor="dosage" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-            Dosage Amount *
+          <label htmlFor="strength" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+            Strength
           </label>
           <input
-            id="dosage"
+            id="strength"
             type="number"
             step="0.1"
-            min="0.1"
+            min="0.001"
             max="10000"
             style={inputStyle}
             placeholder="e.g., 500"
-            {...register('dosage', { valueAsNumber: true })}
-            aria-invalid={!!errors.dosage}
+            {...register('strength', { valueAsNumber: true })}
+            aria-invalid={!!errors.strength}
           />
-          {errors.dosage && (
-            <div style={errorStyle}>{errors.dosage.message}</div>
+          {errors.strength && (
+            <div style={errorStyle}>{errors.strength.message}</div>
           )}
         </div>
 
         <div style={halfWidthStyle}>
           <label htmlFor="unit" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-            Unit *
+            Unit
           </label>
           <select
             id="unit"
@@ -251,7 +256,7 @@ export const MedicationForm: React.FC<MedicationFormProps> = ({
             {...register('unit')}
             aria-invalid={!!errors.unit}
           >
-            <option value="">Select unit</option>
+            <option value="">Select unit (optional)</option>
             {COMMON_UNITS.map((unit) => (
               <option key={unit} value={unit}>
                 {unit}
@@ -265,80 +270,39 @@ export const MedicationForm: React.FC<MedicationFormProps> = ({
       </div>
 
       <div style={{ marginBottom: '20px', textAlign: 'left' }}>
-        <label htmlFor="frequency" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-          Frequency *
+        <label htmlFor="manufacturer" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+          Manufacturer
         </label>
-        <select
-          id="frequency"
-          style={selectStyle}
-          {...register('frequency')}
-          aria-invalid={!!errors.frequency}
-        >
-          {FREQUENCY_OPTIONS.map((freq) => (
-            <option key={freq} value={freq}>
-              {getFrequencyDisplayName(freq)}
-            </option>
-          ))}
-        </select>
-        {errors.frequency && (
-          <div style={errorStyle}>{errors.frequency.message}</div>
+        <input
+          id="manufacturer"
+          type="text"
+          style={inputStyle}
+          placeholder="Enter manufacturer (optional)"
+          {...register('manufacturer')}
+          aria-invalid={!!errors.manufacturer}
+        />
+        {errors.manufacturer && (
+          <div style={errorStyle}>{errors.manufacturer.message}</div>
         )}
         <div style={helpTextStyle}>
-          {getFrequencyDescription(selectedFrequency)}
-        </div>
-      </div>
-
-      <div style={rowStyle}>
-        <div style={halfWidthStyle}>
-          <label htmlFor="startDate" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-            Start Date *
-          </label>
-          <input
-            id="startDate"
-            type="date"
-            style={inputStyle}
-            {...register('startDate')}
-            aria-invalid={!!errors.startDate}
-          />
-          {errors.startDate && (
-            <div style={errorStyle}>{errors.startDate.message}</div>
-          )}
-        </div>
-
-        <div style={halfWidthStyle}>
-          <label htmlFor="endDate" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-            End Date (Optional)
-          </label>
-          <input
-            id="endDate"
-            type="date"
-            style={inputStyle}
-            {...register('endDate')}
-            aria-invalid={!!errors.endDate}
-          />
-          {errors.endDate && (
-            <div style={errorStyle}>{errors.endDate.message}</div>
-          )}
-          <div style={helpTextStyle}>
-            Leave blank for ongoing medication
-          </div>
+          Example: Pfizer, Johnson & Johnson, Generic
         </div>
       </div>
 
       <div style={{ marginBottom: '30px', textAlign: 'left' }}>
-        <label htmlFor="notes" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-          Notes
+        <label htmlFor="description" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+          Description
         </label>
         <textarea
-          id="notes"
+          id="description"
           rows={4}
           style={{...inputStyle, resize: 'vertical'}}
-          placeholder="Additional notes about this medication (instructions, side effects to monitor, etc.)"
-          {...register('notes')}
-          aria-invalid={!!errors.notes}
+          placeholder="Additional information about this medication (uses, side effects, etc.)"
+          {...register('description')}
+          aria-invalid={!!errors.description}
         />
-        {errors.notes && (
-          <div style={errorStyle}>{errors.notes.message}</div>
+        {errors.description && (
+          <div style={errorStyle}>{errors.description.message}</div>
         )}
       </div>
 

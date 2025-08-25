@@ -28,9 +28,21 @@ export const MedicalEventCard: React.FC<MedicalEventCardProps> = ({
   const [showDetails, setShowDetails] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const eventTypeDisplay = EVENT_TYPE_DISPLAY[event.type];
-  const severityDisplay = SEVERITY_DISPLAY[event.severity];
-  const seizureDisplay = event.seizureType ? SEIZURE_TYPE_DISPLAY[event.seizureType] : null;
+  const mapCategoryToEventType = (category: string): string => {
+    switch (category) {
+      case 'SYMPTOM': return 'SEIZURE';
+      case 'ADVERSE_REACTION': return 'MEDICATION_REACTION';
+      case 'EMERGENCY': return 'EMERGENCY';
+      case 'MEDICATION': return 'ROUTINE_CHECK';
+      case 'OBSERVATION': return 'OTHER';
+      default: return 'OTHER';
+    }
+  };
+
+  const eventType = event.category ? mapCategoryToEventType(event.category) : 'OTHER';
+  const eventTypeDisplay = EVENT_TYPE_DISPLAY[eventType as keyof typeof EVENT_TYPE_DISPLAY] || EVENT_TYPE_DISPLAY.OTHER;
+  const severityDisplay = SEVERITY_DISPLAY[event.severity] || SEVERITY_DISPLAY.MODERATE;
+  const seizureDisplay = (event as any).seizureType ? SEIZURE_TYPE_DISPLAY[(event as any).seizureType] : null;
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this medical event? This action cannot be undone.')) {
@@ -56,8 +68,8 @@ export const MedicalEventCard: React.FC<MedicalEventCardProps> = ({
     };
   };
 
-  const { date, time } = formatEventTime(event.eventTimestamp);
-  const timeSince = medicalEventService.formatTimeSince(event.eventTimestamp);
+  const { date, time } = formatEventTime(event.eventTime);
+  const timeSince = medicalEventService.formatTimeSince(event.eventTime);
   const duration = medicalEventService.formatDuration(event.duration);
 
   // Card styles
@@ -224,54 +236,53 @@ export const MedicalEventCard: React.FC<MedicalEventCardProps> = ({
       {showDetails && !compact && (
         <div style={detailsStyle}>
           <div style={gridStyle}>
-            {event.location && (
+            {(event as any).location && (
               <div>
                 <strong>Location:</strong><br />
-                {event.location}
+                {(event as any).location}
               </div>
             )}
             
-            {event.triggers && event.triggers.length > 0 && (
+            {(event as any).triggers && (event as any).triggers.length > 0 && (
               <div>
                 <strong>Triggers:</strong><br />
-                {event.triggers.join(', ')}
+                {(event as any).triggers.join(', ')}
               </div>
             )}
             
-            {event.medicationGiven && (
+            {(event as any).medicationGiven && (
               <div>
                 <strong>Medication:</strong><br />
-                {event.medicationGiven}
-                {event.dosageGiven && ` (${event.dosageGiven}mg)`}
+                {(event as any).medicationGiven}
+                {(event as any).dosageGiven && ` (${(event as any).dosageGiven}mg)`}
               </div>
             )}
             
-            {event.witnessedBy && event.witnessedBy.length > 0 && (
+            {(event as any).witnessedBy && (event as any).witnessedBy.length > 0 && (
               <div>
                 <strong>Witnessed by:</strong><br />
-                {event.witnessedBy.join(', ')}
+                {(event as any).witnessedBy.join(', ')}
               </div>
             )}
             
             <div>
               <strong>Status:</strong><br />
               <span style={badgeStyle(
-                event.status === 'RESOLVED' ? '#10b981' : 
-                event.status === 'ACTIVE' ? '#f59e0b' : '#6b7280',
+                event.resolved ? '#10b981' : '#f59e0b',
                 'small'
               )}>
-                {event.status.replace('_', ' ')}
+                {event.resolved ? 'RESOLVED' : 'ACTIVE'}
               </span>
             </div>
 
             <div>
               <strong>Emergency Response:</strong><br />
-              {event.emergencyContactCalled ? '✅ Contact called' : '❌ No contact'}<br />
-              {event.hospitalRequired ? '🏥 Hospital visit' : '🏠 Treated at home'}
+              {(event as any).emergencyContactCalled ? '✅ Contact called' : '❌ No contact'}<br />
+              {(event as any).hospitalRequired ? '🏥 Hospital visit' : '🏠 Treated at home'}
             </div>
           </div>
 
-          {event.notes && (
+          {(event as any).notes && (
             <div style={{ marginTop: '12px' }}>
               <strong>Notes:</strong><br />
               <div style={{ 
@@ -281,7 +292,7 @@ export const MedicalEventCard: React.FC<MedicalEventCardProps> = ({
                 borderRadius: '4px',
                 marginTop: '4px'
               }}>
-                {event.notes}
+                {(event as any).notes}
               </div>
             </div>
           )}
@@ -293,7 +304,9 @@ export const MedicalEventCard: React.FC<MedicalEventCardProps> = ({
             borderTop: '1px solid #e5e7eb',
             paddingTop: '8px'
           }}>
-            <div>Reported by: {event.reportedBy}</div>
+            {(event as any).reportedBy && (
+              <div>Reported by: {(event as any).reportedBy}</div>
+            )}
             <div>Created: {new Date(event.createdAt).toLocaleString('en-GB')}</div>
             {event.updatedAt !== event.createdAt && (
               <div>Updated: {new Date(event.updatedAt).toLocaleString('en-GB')}</div>

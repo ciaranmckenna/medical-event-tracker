@@ -1,44 +1,121 @@
 import { apiClient } from '../api/apiClient';
-import type { LoginRequest, RegisterRequest, AuthResponse, User } from '../../types/api';
+import type { 
+  LoginRequest, 
+  RegisterRequest, 
+  AuthResponse, 
+  UserProfileResponse 
+} from '../../types/medical';
+import { sanitizeEmail, sanitizePatientName } from '../../utils/sanitization';
 
 export class AuthService {
   // Authentication endpoints
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<User>('/api/auth/login', credentials);
-    
-    // Backend currently returns User directly instead of AuthResponse
-    // TODO: Backend should return {token, user, expiresIn}
-    // For now, create a mock token for demo purposes
-    const mockAuthResponse: AuthResponse = {
-      token: 'demo-jwt-token-' + Date.now(),
-      user: response as User,
-      expiresIn: 3600
-    };
-    
-    // Store token and user data
-    apiClient.setAuthToken(mockAuthResponse.token);
-    this.storeUserData(mockAuthResponse.user);
-    
-    return mockAuthResponse;
+    try {
+      // Sanitize input before sending to backend
+      const sanitizedCredentials = {
+        usernameOrEmail: credentials.usernameOrEmail.trim(),
+        password: credentials.password
+      };
+
+      console.log('[AuthService] Attempting login with:', { usernameOrEmail: sanitizedCredentials.usernameOrEmail });
+      
+      const response = await apiClient.post<AuthResponse>('/api/auth/login', sanitizedCredentials);
+      
+      console.log('[AuthService] Login response received:', {
+        id: response.id,
+        username: response.username,
+        token: response.token ? 'present' : 'missing',
+        tokenType: response.tokenType,
+        email: response.email,
+        firstName: response.firstName,
+        lastName: response.lastName,
+        role: response.role
+      });
+      
+      console.log('[AuthService] Setting auth token...');
+      // Store token and user data
+      apiClient.setAuthToken(response.token);
+      console.log('[AuthService] Auth token set successfully');
+      
+      console.log('[AuthService] Creating user profile...');
+      
+      // Check for missing fields
+      if (!response.email) console.warn('[AuthService] Missing email in response');
+      if (!response.firstName) console.warn('[AuthService] Missing firstName in response');
+      if (!response.lastName) console.warn('[AuthService] Missing lastName in response');
+      if (!response.role) console.warn('[AuthService] Missing role in response');
+      
+      // Convert backend response to frontend format with proper type handling
+      const userProfile: UserProfileResponse = {
+        id: String(response.id), // Convert UUID to string
+        username: response.username,
+        email: response.email,
+        firstName: response.firstName,
+        lastName: response.lastName,
+        role: response.role,
+        enabled: true, // Backend doesn't return this in auth response
+        createdAt: '', // Backend doesn't return this in auth response
+        updatedAt: '' // Backend doesn't return this in auth response
+      };
+      
+      console.log('[AuthService] Storing user data:', userProfile);
+      this.storeUserData(userProfile);
+      console.log('[AuthService] User data stored successfully');
+      
+      console.log('[AuthService] Login completed successfully');
+      return response;
+    } catch (error: any) {
+      console.error('[AuthService] Login error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        url: error.config?.url
+      });
+      
+      // Handle secure error messages from backend
+      const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
+      throw new Error(message);
+    }
   }
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<User>('/api/auth/register', userData);
-    
-    // Backend currently returns User directly instead of AuthResponse
-    // TODO: Backend should return {token, user, expiresIn}
-    // For now, create a mock token for demo purposes
-    const mockAuthResponse: AuthResponse = {
-      token: 'demo-jwt-token-' + Date.now(),
-      user: response as User,
-      expiresIn: 3600
-    };
-    
-    // Store token and user data
-    apiClient.setAuthToken(mockAuthResponse.token);
-    this.storeUserData(mockAuthResponse.user);
-    
-    return mockAuthResponse;
+    try {
+      // Sanitize input before sending to backend
+      const sanitizedData = {
+        username: userData.username.trim(),
+        email: sanitizeEmail(userData.email),
+        password: userData.password,
+        firstName: sanitizePatientName(userData.firstName),
+        lastName: sanitizePatientName(userData.lastName)
+      };
+
+      const response = await apiClient.post<AuthResponse>('/api/auth/register', sanitizedData);
+      
+      // Store token and user data
+      apiClient.setAuthToken(response.token);
+      
+      // Convert backend response to frontend format with proper type handling
+      const userProfile: UserProfileResponse = {
+        id: String(response.id), // Convert UUID to string
+        username: response.username,
+        email: response.email,
+        firstName: response.firstName,
+        lastName: response.lastName,
+        role: response.role,
+        enabled: true, // Backend doesn't return this in auth response
+        createdAt: '', // Backend doesn't return this in auth response
+        updatedAt: '' // Backend doesn't return this in auth response
+      };
+      
+      this.storeUserData(userProfile);
+      
+      return response;
+    } catch (error: any) {
+      // Handle secure error messages from backend
+      const message = error.response?.data?.message || 'Registration failed. Please try again.';
+      throw new Error(message);
+    }
   }
 
   async logout(): Promise<void> {
@@ -53,12 +130,29 @@ export class AuthService {
     }
   }
 
-  async getCurrentUser(): Promise<User> {
-    return apiClient.get<User>('/api/auth/profile');
+  async getCurrentUser(): Promise<UserProfileResponse> {
+    try {
+      return await apiClient.get<UserProfileResponse>('/api/auth/profile');
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to fetch user profile';
+      throw new Error(message);
+    }
   }
 
-  async updateProfile(userData: Partial<User>): Promise<User> {
-    return apiClient.put<User>('/api/auth/profile', userData);
+  async updateProfile(userData: Partial<RegisterRequest>): Promise<UserProfileResponse> {
+    try {
+      // Sanitize input data
+      const sanitizedData: any = {};
+      if (userData.firstName) sanitizedData.firstName = sanitizePatientName(userData.firstName);
+      if (userData.lastName) sanitizedData.lastName = sanitizePatientName(userData.lastName);
+      if (userData.email) sanitizedData.email = sanitizeEmail(userData.email);
+      if (userData.username) sanitizedData.username = userData.username.trim();
+
+      return await apiClient.put<UserProfileResponse>('/api/auth/profile', sanitizedData);
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to update profile';
+      throw new Error(message);
+    }
   }
 
   async deleteAccount(): Promise<void> {
@@ -127,12 +221,12 @@ export class AuthService {
   }
 
   // User data management
-  getStoredUser(): User | null {
+  getStoredUser(): UserProfileResponse | null {
     const userData = sessionStorage.getItem('user_data') || localStorage.getItem('user_data');
     return userData ? JSON.parse(userData) : null;
   }
 
-  private storeUserData(user: User): void {
+  private storeUserData(user: UserProfileResponse): void {
     sessionStorage.setItem('user_data', JSON.stringify(user));
   }
 

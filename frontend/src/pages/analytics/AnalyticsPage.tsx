@@ -65,12 +65,24 @@ export const AnalyticsPage: React.FC = () => {
           medicationService.getMedications()
         ]);
         
-        setPatients(patientsResponse.content);
-        setMedications(medicationsResponse.content);
+        setPatients(patientsResponse.content || []);
+        
+        // Check if medications have patientId (patient medications) vs catalog medications
+        const medicationContent = medicationsResponse.content || [];
+        const firstMedication = medicationContent[0];
+        if (firstMedication && 'patientId' in firstMedication) {
+          // This is patient medication data
+          setMedications(medicationsResponse.content);
+        } else {
+          // This is catalog medication data - use mock data for analytics
+          console.warn('API returned catalog medications instead of patient medications. Using mock data for analytics.');
+          setMedications(mockAnalyticsData.medications);
+        }
         
         // Auto-select first patient if available
-        if (patientsResponse.content.length > 0) {
-          setSelectedPatientId(patientsResponse.content[0].id);
+        const patientContent = patientsResponse.content || [];
+        if (patientContent.length > 0) {
+          setSelectedPatientId(patientContent[0].id);
         }
       }
     } catch (error) {
@@ -120,8 +132,8 @@ export const AnalyticsPage: React.FC = () => {
           })
         ]);
         
-        setEvents(eventsResponse.content);
-        setDosageRecords(dosageResponse.content);
+        setEvents(eventsResponse.content || []);
+        setDosageRecords(dosageResponse.content || []);
       }
     } catch (error) {
       console.error('Failed to load analytics data:', error);
@@ -130,6 +142,10 @@ export const AnalyticsPage: React.FC = () => {
   };
 
   const getPatientMedications = (patientId: string) => {
+    // Safety check - medications might be undefined if API call fails
+    if (!medications || !Array.isArray(medications)) {
+      return [];
+    }
     return medications.filter(med => med.patientId === patientId);
   };
 
@@ -308,7 +324,7 @@ export const AnalyticsPage: React.FC = () => {
     );
   }
 
-  if (!selectedPatientId && patients.length === 0) {
+  if (!selectedPatientId && (!patients || patients.length === 0)) {
     return (
       <div style={containerStyle}>
         <div style={{
