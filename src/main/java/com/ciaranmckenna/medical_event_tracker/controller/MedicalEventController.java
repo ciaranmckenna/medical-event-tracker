@@ -10,6 +10,7 @@ import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventCategory;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventSeverity;
 import com.ciaranmckenna.medical_event_tracker.exception.MedicalEventNotFoundException;
 import com.ciaranmckenna.medical_event_tracker.service.MedicalEventService;
+import com.ciaranmckenna.medical_event_tracker.service.MapperService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,9 +32,11 @@ import java.util.UUID;
 public class MedicalEventController {
 
     private final MedicalEventService medicalEventService;
+    private final MapperService mapperService;
 
-    public MedicalEventController(MedicalEventService medicalEventService) {
+    public MedicalEventController(MedicalEventService medicalEventService, MapperService mapperService) {
         this.medicalEventService = medicalEventService;
+        this.mapperService = mapperService;
     }
 
     /**
@@ -44,9 +47,9 @@ public class MedicalEventController {
     public ResponseEntity<MedicalEventResponse> createMedicalEvent(
             @Valid @RequestBody CreateMedicalEventRequest request) {
         
-        MedicalEvent medicalEvent = mapToEntity(request);
+        MedicalEvent medicalEvent = mapperService.mapToEntity(request);
         MedicalEvent createdEvent = medicalEventService.createMedicalEvent(medicalEvent);
-        MedicalEventResponse response = mapToResponse(createdEvent);
+        MedicalEventResponse response = mapperService.mapToResponse(createdEvent);
         
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -62,7 +65,7 @@ public class MedicalEventController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         
-        MedicalEventResponse response = mapToResponse(eventOpt.get());
+        MedicalEventResponse response = mapperService.mapToResponse(eventOpt.get());
         return ResponseEntity.ok(response);
     }
 
@@ -75,7 +78,7 @@ public class MedicalEventController {
         
         List<MedicalEvent> events = medicalEventService.getMedicalEventsByPatientId(patientId);
         List<MedicalEventResponse> responses = events.stream()
-                .map(this::mapToResponse)
+                .map(mapperService::mapToResponse)
                 .toList();
         
         return ResponseEntity.ok(responses);
@@ -91,9 +94,9 @@ public class MedicalEventController {
             @Valid @RequestBody UpdateMedicalEventRequest request) {
         
         try {
-            MedicalEvent medicalEvent = mapToEntity(request);
+            MedicalEvent medicalEvent = mapperService.mapToEntity(request);
             MedicalEvent updatedEvent = medicalEventService.updateMedicalEvent(medicalEvent);
-            MedicalEventResponse response = mapToResponse(updatedEvent);
+            MedicalEventResponse response = mapperService.mapToResponse(updatedEvent);
             
             return ResponseEntity.ok(response);
         } catch (MedicalEventNotFoundException e) {
@@ -127,7 +130,7 @@ public class MedicalEventController {
         List<MedicalEvent> events = medicalEventService.getMedicalEventsByPatientIdAndDateRange(
                 patientId, startTime, endTime);
         List<MedicalEventResponse> responses = events.stream()
-                .map(this::mapToResponse)
+                .map(mapperService::mapToResponse)
                 .toList();
         
         return ResponseEntity.ok(responses);
@@ -144,7 +147,7 @@ public class MedicalEventController {
         List<MedicalEvent> events = medicalEventService.getMedicalEventsByPatientIdAndCategory(
                 patientId, category);
         List<MedicalEventResponse> responses = events.stream()
-                .map(this::mapToResponse)
+                .map(mapperService::mapToResponse)
                 .toList();
         
         return ResponseEntity.ok(responses);
@@ -161,7 +164,7 @@ public class MedicalEventController {
         List<MedicalEvent> events = medicalEventService.getMedicalEventsByPatientIdAndSeverity(
                 patientId, severity);
         List<MedicalEventResponse> responses = events.stream()
-                .map(this::mapToResponse)
+                .map(mapperService::mapToResponse)
                 .toList();
         
         return ResponseEntity.ok(responses);
@@ -178,7 +181,7 @@ public class MedicalEventController {
         List<MedicalEvent> events = medicalEventService.searchMedicalEventsByPatientId(
                 patientId, searchText);
         List<MedicalEventResponse> responses = events.stream()
-                .map(this::mapToResponse)
+                .map(mapperService::mapToResponse)
                 .toList();
         
         return ResponseEntity.ok(responses);
@@ -195,7 +198,7 @@ public class MedicalEventController {
         List<MedicalEvent> events = medicalEventService.getRecentMedicalEventsByPatientId(
                 patientId, daysBack);
         List<MedicalEventResponse> responses = events.stream()
-                .map(this::mapToResponse)
+                .map(mapperService::mapToResponse)
                 .toList();
         
         return ResponseEntity.ok(responses);
@@ -273,43 +276,4 @@ public class MedicalEventController {
             LocalDateTime generatedAt
     ) {}
 
-    private MedicalEvent mapToEntity(CreateMedicalEventRequest request) {
-        MedicalEvent event = new MedicalEvent();
-        event.setPatientId(request.patientId());
-        event.setMedicationId(request.medicationId());
-        event.setEventTime(request.eventTime());
-        event.setTitle(request.title());
-        event.setDescription(request.description());
-        event.setSeverity(request.severity());
-        event.setCategory(request.category());
-        return event;
-    }
-
-    private MedicalEvent mapToEntity(UpdateMedicalEventRequest request) {
-        MedicalEvent event = new MedicalEvent();
-        event.setId(request.id());
-        event.setPatientId(request.patientId());
-        event.setMedicationId(request.medicationId());
-        event.setEventTime(request.eventTime());
-        event.setTitle(request.title());
-        event.setDescription(request.description());
-        event.setSeverity(request.severity());
-        event.setCategory(request.category());
-        return event;
-    }
-
-    private MedicalEventResponse mapToResponse(MedicalEvent event) {
-        return new MedicalEventResponse(
-                event.getId(),
-                event.getPatientId(),
-                event.getMedicationId(),
-                event.getEventTime(),
-                event.getTitle(),
-                event.getDescription(),
-                event.getSeverity(),
-                event.getCategory(),
-                event.getCreatedAt(),
-                event.getUpdatedAt()
-        );
-    }
 }

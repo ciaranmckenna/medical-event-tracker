@@ -2,72 +2,42 @@ import { z } from 'zod';
 
 // Medication form validation schema
 export const medicationSchema = z.object({
-  patientId: z
-    .string()
-    .min(1, 'Patient selection is required'),
-  
   name: z
     .string()
     .min(1, 'Medication name is required')
     .max(100, 'Medication name too long')
     .regex(/^[a-zA-Z0-9\s\-\.()]+$/, 'Invalid characters in medication name'),
+  
+  type: z
+    .enum(['TABLET', 'CAPSULE', 'LIQUID', 'INJECTION', 'TOPICAL', 'INHALER', 'PATCH', 'SUPPOSITORY', 'OTHER'], {
+      errorMap: () => ({ message: 'Please select a medication type' })
+    }),
     
-  dosage: z
+  genericName: z
+    .string()
+    .max(100, 'Generic name too long')
+    .optional(),
+    
+  strength: z
     .number()
-    .positive('Dosage must be positive')
-    .max(10000, 'Dosage exceeds maximum safe limit')
-    .refine((val) => val % 0.1 === 0, 'Dosage must be in increments of 0.1'),
+    .positive('Strength must be positive')
+    .max(10000, 'Strength exceeds maximum safe limit')
+    .optional(),
     
   unit: z
     .string()
-    .min(1, 'Dosage unit is required')
-    .max(20, 'Unit name too long'),
+    .max(20, 'Unit name too long')
+    .optional(),
     
-  frequency: z
-    .enum(['ONCE_DAILY', 'TWICE_DAILY', 'THREE_TIMES_DAILY', 'AS_NEEDED'], {
-      errorMap: () => ({ message: 'Please select a valid frequency' })
-    }),
-    
-  startDate: z
+  manufacturer: z
     .string()
-    .min(1, 'Start date is required')
-    .refine((date) => {
-      const startDate = new Date(date);
-      const today = new Date();
-      const maxFutureDate = new Date();
-      maxFutureDate.setFullYear(today.getFullYear() + 2);
-      
-      return startDate >= new Date('2020-01-01') && startDate <= maxFutureDate;
-    }, 'Start date must be between 2020 and 2 years from now'),
+    .max(100, 'Manufacturer name too long')
+    .optional(),
     
-  endDate: z
+  description: z
     .string()
+    .max(500, 'Description too long')
     .optional()
-    .refine((date) => {
-      if (!date) return true;
-      const endDate = new Date(date);
-      const today = new Date();
-      const maxFutureDate = new Date();
-      maxFutureDate.setFullYear(today.getFullYear() + 5);
-      
-      return endDate >= today && endDate <= maxFutureDate;
-    }, 'End date must be between today and 5 years from now'),
-    
-  notes: z
-    .string()
-    .max(500, 'Notes too long (maximum 500 characters)')
-    .optional()
-    .or(z.literal(''))
-}).refine((data) => {
-  if (data.endDate) {
-    const startDate = new Date(data.startDate);
-    const endDate = new Date(data.endDate);
-    return endDate >= startDate;
-  }
-  return true;
-}, {
-  message: "End date must be after start date",
-  path: ["endDate"]
 });
 
 export type MedicationFormData = z.infer<typeof medicationSchema>;
@@ -134,10 +104,13 @@ export type MedicationSearchData = z.infer<typeof medicationSearchSchema>;
 
 // Transform form data for API submission
 export const transformMedicationForSubmission = (data: MedicationFormData) => ({
-  ...data,
-  endDate: data.endDate || undefined,
-  notes: data.notes || undefined,
-  active: true // New medications are active by default
+  name: data.name,
+  type: data.type,
+  genericName: data.genericName || undefined,
+  strength: data.strength || undefined,
+  unit: data.unit || undefined,
+  manufacturer: data.manufacturer || undefined,
+  description: data.description || undefined
 });
 
 export const transformMedicationDosageForSubmission = (data: MedicationDosageFormData) => ({

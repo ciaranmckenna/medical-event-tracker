@@ -2,6 +2,7 @@ package com.ciaranmckenna.medical_event_tracker.dto;
 
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventCategory;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventSeverity;
+import com.ciaranmckenna.medical_event_tracker.validation.SanitizedInput;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
@@ -26,9 +27,11 @@ public record CreateMedicalEventRequest(
 
         @NotBlank(message = "Title is required")
         @Size(max = 200, message = "Title cannot exceed 200 characters")
+        @SanitizedInput(maxLength = 200, message = "Title contains unsafe content")
         String title,
 
         @Size(max = 2000, message = "Description cannot exceed 2000 characters")
+        @SanitizedInput(maxLength = 2000, message = "Description contains unsafe content")
         String description,
 
         @NotNull(message = "Severity is required")
