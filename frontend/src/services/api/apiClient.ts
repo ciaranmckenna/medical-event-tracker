@@ -66,24 +66,34 @@ class ApiClient {
 
   private handleResponseError(error: AxiosError): void {
     if (error.response?.status === 401) {
-      // Token expired or invalid
+      // Token expired or invalid - backend now returns secure error messages
       this.clearAuthToken();
-      // Redirect to login page
-      window.location.href = '/auth/login';
+      // Use dynamic import to avoid circular dependency
+      import('../../pages/auth/LoginPage').then(() => {
+        window.location.href = '/login';
+      });
     } else if (error.response?.status === 403) {
-      // Insufficient permissions
-      console.error('[API Error] Insufficient permissions');
+      // Insufficient permissions - backend provides secure error message
+      const message = error.response?.data?.message || 'Access denied. Insufficient permissions.';
+      console.error('[API Error]', message);
+      // Could dispatch to toast notification system
     } else if (error.response?.status >= 500) {
-      // Server error
-      console.error('[API Error] Server error', error.response.data);
+      // Server error - backend now returns secure error messages
+      const message = error.response?.data?.message || 'Internal server error occurred';
+      console.error('[API Error]', message);
+    } else if (error.response?.status === 400) {
+      // Bad request - backend validation errors are now sanitized
+      const message = error.response?.data?.message || 'Invalid request data';
+      console.error('[API Error]', message);
     }
 
-    // Log all errors in development
+    // Log all errors in development (but not sensitive data)
     if (import.meta.env.VITE_DEBUG_MODE === 'true') {
       console.error('[API Error]', {
         status: error.response?.status,
-        message: error.message,
-        data: error.response?.data,
+        message: error.response?.data?.message || error.message,
+        url: error.config?.url,
+        method: error.config?.method
       });
     }
   }

@@ -1,12 +1,11 @@
-import type { Medication } from '../../types/api';
-import { medicationService } from '../../services/api/medicationService';
+import type { MedicationCatalog } from '../../types/api';
 
 interface MedicationCardProps {
-  medication: Medication;
-  onEdit: (medication: Medication) => void;
-  onDelete: (medication: Medication) => void;
-  onView: (medication: Medication) => void;
-  onRecordDose: (medication: Medication) => void;
+  medication: MedicationCatalog;
+  onEdit: (medication: MedicationCatalog) => void;
+  onDelete: (medication: MedicationCatalog) => void;
+  onView: (medication: MedicationCatalog) => void;
+  onRecordDose: (medication: MedicationCatalog) => void;
 }
 
 export const MedicationCard: React.FC<MedicationCardProps> = ({
@@ -16,11 +15,17 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
   onView,
   onRecordDose
 }) => {
-  const status = medicationService.getMedicationStatus(medication);
-  const isActive = medicationService.isActiveMedication(medication);
-  const daysRemaining = medicationService.calculateDaysRemaining(medication);
-  const medicationDisplay = medicationService.formatMedicationDisplay(medication);
-  const frequencyDisplay = medicationService.formatFrequencyDisplay(medication.frequency);
+  const formatMedicationDisplay = () => {
+    const parts = [medication.name];
+    if (medication.strength && medication.unit) {
+      parts.push(`${medication.strength}${medication.unit}`);
+    }
+    return parts.join(' ');
+  };
+
+  const formatTypeDisplay = (type: string) => {
+    return type.charAt(0) + type.slice(1).toLowerCase().replace('_', ' ');
+  };
 
   const cardStyle = {
     border: '1px solid #ddd',
@@ -53,11 +58,7 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
     fontSize: '12px',
     fontWeight: 'bold',
     color: 'white',
-    backgroundColor: 
-      status === 'Active' ? '#28a745' :
-      status === 'Inactive' ? '#6c757d' :
-      status === 'Expired' ? '#dc3545' :
-      '#ffc107' // Future
+    backgroundColor: medication.active ? '#28a745' : '#6c757d'
   };
 
   const infoRowStyle = {
@@ -116,15 +117,10 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
     <div style={cardStyle}>
       <div style={headerStyle}>
         <div>
-          <h3 style={nameStyle}>💊 {medicationDisplay}</h3>
-          <div style={statusBadgeStyle}>{status}</div>
+          <h3 style={nameStyle}>💊 {formatMedicationDisplay()}</h3>
+          <div style={statusBadgeStyle}>{medication.active ? 'Active' : 'Inactive'}</div>
         </div>
         <div>
-          {isActive && (
-            <button onClick={() => onRecordDose(medication)} style={recordButtonStyle}>
-              📝 Record Dose
-            </button>
-          )}
           <button onClick={() => onView(medication)} style={viewButtonStyle}>
             👁️ View
           </button>
@@ -139,32 +135,26 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
 
       <div style={infoRowStyle}>
         <div style={infoItemStyle}>
-          <strong>Frequency:</strong> {frequencyDisplay}
+          <strong>Type:</strong> {formatTypeDisplay(medication.type)}
         </div>
-        <div style={infoItemStyle}>
-          <strong>Started:</strong> {new Date(medication.startDate).toLocaleDateString()}
-        </div>
-        {medication.endDate && (
+        {medication.genericName && (
           <div style={infoItemStyle}>
-            <strong>Ends:</strong> {new Date(medication.endDate).toLocaleDateString()}
-            {daysRemaining !== null && (
-              <span style={{ 
-                color: daysRemaining <= 7 ? '#dc3545' : daysRemaining <= 30 ? '#ffc107' : '#28a745',
-                marginLeft: '5px'
-              }}>
-                ({daysRemaining > 0 ? `${daysRemaining} days left` : 'Expired'})
-              </span>
-            )}
+            <strong>Generic:</strong> {medication.genericName}
+          </div>
+        )}
+        {medication.manufacturer && (
+          <div style={infoItemStyle}>
+            <strong>Manufacturer:</strong> {medication.manufacturer}
           </div>
         )}
       </div>
 
-      {medication.notes && (
+      {medication.description && (
         <div style={{ marginTop: '10px' }}>
           <div style={{ fontSize: '14px', color: '#666' }}>
-            <strong>Notes:</strong> {medication.notes.length > 100 
-              ? `${medication.notes.substring(0, 100)}...` 
-              : medication.notes
+            <strong>Description:</strong> {medication.description.length > 100 
+              ? `${medication.description.substring(0, 100)}...` 
+              : medication.description
             }
           </div>
         </div>
@@ -177,19 +167,19 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
         )}
       </div>
 
-      {!isActive && status !== 'Future' && (
+      {!medication.active && (
         <div style={{ 
           position: 'absolute',
           top: '10px',
           right: '10px',
-          backgroundColor: 'rgba(220, 53, 69, 0.1)',
-          color: '#dc3545',
+          backgroundColor: 'rgba(108, 117, 125, 0.1)',
+          color: '#6c757d',
           padding: '5px 10px',
           borderRadius: '4px',
           fontSize: '12px',
           fontWeight: 'bold'
         }}>
-          {status === 'Expired' ? 'EXPIRED' : 'INACTIVE'}
+          INACTIVE
         </div>
       )}
     </div>

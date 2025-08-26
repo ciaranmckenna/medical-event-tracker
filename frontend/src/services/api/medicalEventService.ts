@@ -327,7 +327,7 @@ const DEFAULT_MOCK_EVENTS: MedicalEvent[] = [
 
 export class MedicalEventService {
   private readonly baseUrl = '/api/medical-events';
-  private useMockData = true; // Force mock data for frontend development
+  private useMockData = false; // Use real API data
   private mockEvents: MedicalEvent[] = loadMockEventsFromStorage();
 
   // Get all medical events with pagination and search
@@ -398,7 +398,10 @@ export class MedicalEventService {
         saveMockEventsToStorage(this.mockEvents);
         return newEvent;
       }
-      return apiClient.post<MedicalEvent>(this.baseUrl, event);
+      
+      // Transform frontend request to backend format
+      const backendRequest = this.transformToBackendRequest(event);
+      return apiClient.post<MedicalEvent>(this.baseUrl, backendRequest);
     } catch (error) {
       console.warn('Create medical event API failed, switching to mock data:', error);
       this.useMockData = true;
@@ -471,6 +474,46 @@ export class MedicalEventService {
       this.mockEvents.splice(index, 1);
       saveMockEventsToStorage(this.mockEvents);
     }
+  }
+
+  // Transform frontend request to backend format
+  private transformToBackendRequest(frontendRequest: MedicalEventCreateRequest): any {
+    // Map frontend EventType to backend MedicalEventCategory
+    const mapEventTypeToCategory = (type: EventType): string => {
+      switch (type) {
+        case 'SEIZURE':
+          return 'SYMPTOM'; // Seizures are symptoms
+        case 'MEDICATION_REACTION':
+          return 'ADVERSE_REACTION';
+        case 'EMERGENCY':
+          return 'EMERGENCY';
+        case 'APPOINTMENT':
+          return 'APPOINTMENT';
+        case 'MEDICATION':
+          return 'MEDICATION';
+        default:
+          return 'OBSERVATION'; // Default fallback
+      }
+    };
+
+    // Convert eventTimestamp string to LocalDateTime format expected by backend
+    const convertToLocalDateTime = (timestampString: string): string => {
+      // Remove 'Z' and convert ISO string to backend LocalDateTime format
+      return timestampString.replace('Z', '');
+    };
+
+    // Create backend-compatible request
+    const backendRequest = {
+      patientId: frontendRequest.patientId,
+      eventTime: convertToLocalDateTime(frontendRequest.eventTimestamp),
+      title: frontendRequest.title,
+      description: frontendRequest.description || '',
+      severity: frontendRequest.severity, // Should match: MILD, MODERATE, SEVERE, CRITICAL
+      category: mapEventTypeToCategory(frontendRequest.type),
+      medicationId: frontendRequest.medicationGiven ? undefined : undefined // We don't have medication ID mapping yet
+    };
+
+    return backendRequest;
   }
 
   // Transform form data to API format

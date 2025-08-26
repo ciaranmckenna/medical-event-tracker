@@ -206,4 +206,16 @@ public interface MedicationDosageRepository extends JpaRepository<MedicationDosa
      */
     @Query("SELECT DISTINCT md.medicationId FROM MedicationDosage md WHERE md.patientId = :patientId")
     List<UUID> findDistinctMedicationIdsByPatientId(@Param("patientId") UUID patientId);
+
+    /**
+     * Count medication dosages for a patient within a time range.
+     *
+     * @param patientId the patient's UUID
+     * @param startTime the start of the time range
+     * @param endTime the end of the time range
+     * @return count of medication dosages within the time range
+     */
+    long countByPatientIdAndAdministrationTimeBetween(UUID patientId, 
+                                                     LocalDateTime startTime, 
+                                                     LocalDateTime endTime);
 }

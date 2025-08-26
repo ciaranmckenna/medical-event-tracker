@@ -26,36 +26,27 @@ export const patientSchema = z.object({
       return birthDate <= today && birthDate >= maxAge;
     }, 'Please enter a valid date of birth'),
   
-  height: z
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER'], {
+    required_error: 'Gender is required'
+  }),
+  
+  heightCm: z
     .number()
     .optional()
     .refine((val) => val === undefined || (val >= 30 && val <= 300), {
       message: 'Height must be between 30cm and 300cm'
     }),
   
-  weight: z
+  weightKg: z
     .number()
     .optional()
     .refine((val) => val === undefined || (val >= 0.5 && val <= 1000), {
       message: 'Weight must be between 0.5kg and 1000kg'
     }),
   
-  emergencyContact: z
-    .string()
-    .max(100, 'Emergency contact name too long')
-    .optional()
-    .or(z.literal('')),
-  
-  emergencyPhone: z
-    .string()
-    .max(20, 'Phone number too long')
-    .regex(/^[\d\s\-\+\(\)]*$/, 'Please enter a valid phone number')
-    .optional()
-    .or(z.literal('')),
-  
   notes: z
     .string()
-    .max(1000, 'Notes too long (maximum 1000 characters)')
+    .max(500, 'Notes too long (maximum 500 characters)')
     .optional()
     .or(z.literal(''))
 });
@@ -64,11 +55,12 @@ export type PatientFormData = z.infer<typeof patientSchema>;
 
 // Transform form data for API submission
 export const transformPatientForSubmission = (data: PatientFormData) => ({
-  ...data,
-  height: data.height || undefined,
-  weight: data.weight || undefined,
-  emergencyContact: data.emergencyContact || undefined,
-  emergencyPhone: data.emergencyPhone || undefined,
+  firstName: data.firstName,
+  lastName: data.lastName,
+  dateOfBirth: data.dateOfBirth,
+  gender: data.gender,
+  weightKg: data.weightKg || undefined,
+  heightCm: data.heightCm || undefined,
   notes: data.notes || undefined
 });
 

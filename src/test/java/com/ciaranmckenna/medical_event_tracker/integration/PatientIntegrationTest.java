@@ -55,9 +55,9 @@ class PatientIntegrationTest {
     void setUp() {
         // Create test user
         testUser = new User();
-        testUser.setUsername("testuser");
-        testUser.setEmail("test@example.com");
-        testUser.setPassword("password123");
+        testUser.setUsername("medicaluser");
+        testUser.setEmail("medicaluser@example.com");
+        testUser.setPassword("Password123!");
         testUser.setFirstName("Test");
         testUser.setLastName("User");
         testUser.setRole(User.Role.PRIMARY_USER);
@@ -153,10 +153,12 @@ class PatientIntegrationTest {
     void getActivePatients_Success() throws Exception {
         mockMvc.perform(get("/api/patients"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].firstName").value("John"))
-                .andExpect(jsonPath("$[0].lastName").value("Doe"))
-                .andExpect(jsonPath("$[0].active").value(true));
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].firstName").value("John"))
+                .andExpect(jsonPath("$.content[0].lastName").value("Doe"))
+                .andExpect(jsonPath("$.content[0].active").value(true))
+                .andExpect(jsonPath("$.totalElements").exists())
+                .andExpect(jsonPath("$.totalPages").exists());
     }
 
     @Test

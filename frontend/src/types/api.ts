@@ -52,17 +52,37 @@ export interface Patient {
   id: string;
   firstName: string;
   lastName: string;
+  fullName: string;
   dateOfBirth: string;
-  height?: number;
-  weight?: number;
-  emergencyContact?: string;
-  emergencyPhone?: string;
+  ageInYears: number;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  weightKg?: number;
+  heightCm?: number;
+  bmi?: number;
   notes?: string;
+  active: boolean;
+  activeMedicationCount: number;
   createdAt: string;
   updatedAt: string;
 }
 
 // Medication Types
+// Medication Catalog - Master list of available medications
+export interface MedicationCatalog {
+  id: string;
+  name: string;
+  genericName?: string;
+  type: 'TABLET' | 'CAPSULE' | 'LIQUID' | 'INJECTION' | 'TOPICAL' | 'INHALER' | 'PATCH' | 'SUPPOSITORY' | 'OTHER';
+  strength?: number;
+  unit?: string;
+  manufacturer?: string;
+  description?: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Patient Medication - Specific medication assigned to a patient
 export interface Medication {
   id: string;
   patientId: string;
