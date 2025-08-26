@@ -60,9 +60,9 @@ class MedicalEventSearchIntegrationTest {
     void setUp() {
         // Create and save test user
         testUser = new User();
-        testUser.setUsername("testuser");
-        testUser.setEmail("test@example.com");
-        testUser.setPassword(passwordEncoder.encode("password123"));
+        testUser.setUsername("medicaluser");
+        testUser.setEmail("medicaluser@example.com");
+        testUser.setPassword(passwordEncoder.encode("Password123!"));
         testUser.setFirstName("Test");
         testUser.setLastName("User");
         testUser.setRole(User.Role.PRIMARY_USER);

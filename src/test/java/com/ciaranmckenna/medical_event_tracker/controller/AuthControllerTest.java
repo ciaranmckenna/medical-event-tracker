@@ -35,14 +35,14 @@ class AuthControllerTest {
     @BeforeEach
     void setUp() {
         registerRequest = new RegisterRequest(
-            "testuser",
-            "test@example.com",
-            "password123",
+            "authuser",
+            "authuser@example.com",
+            "Password123!",
             "John",
             "Doe"
         );
 
-        loginRequest = new LoginRequest("testuser", "password123");
+        loginRequest = new LoginRequest("authuser", "Password123!");
     }
 
     @Test
@@ -51,8 +51,8 @@ class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.username").value("testuser"))
-                .andExpect(jsonPath("$.email").value("test@example.com"))
+                .andExpect(jsonPath("$.username").value("authuser"))
+                .andExpect(jsonPath("$.email").value("authuser@example.com"))
                 .andExpect(jsonPath("$.token").exists());
     }
 
