@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '../services/auth/authService';
-import type { User, LoginRequest, RegisterRequest } from '../types/api';
+import type { UserProfileResponse as User, LoginRequest, RegisterRequest } from '../types/medical';
 
 interface AuthContextType {
   user: User | null;
@@ -60,18 +60,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (credentials: LoginRequest) => {
     try {
+      console.log('[useAuth] Calling authService.login...');
       const response = await authService.login(credentials);
-      setUser(response.user);
+      console.log('[useAuth] AuthService returned:', response);
+      
+      // Get the stored user data that authService has already processed and stored
+      const userData = authService.getStoredUser();
+      console.log('[useAuth] Retrieved stored user data:', userData);
+      
+      setUser(userData);
+      console.log('[useAuth] User state updated successfully');
     } catch (error) {
+      console.error('[useAuth] Login failed:', error);
       throw error; // Let the login component handle the error
     }
   };
 
   const register = async (userData: RegisterRequest) => {
     try {
+      console.log('[useAuth] Calling authService.register...');
       const response = await authService.register(userData);
-      setUser(response.user);
+      console.log('[useAuth] AuthService register returned:', response);
+      
+      // Get the stored user data that authService has already processed and stored
+      const userStoredData = authService.getStoredUser();
+      console.log('[useAuth] Retrieved stored user data from register:', userStoredData);
+      
+      setUser(userStoredData);
+      console.log('[useAuth] User state updated successfully after register');
     } catch (error) {
+      console.error('[useAuth] Register failed:', error);
       throw error; // Let the register component handle the error
     }
   };

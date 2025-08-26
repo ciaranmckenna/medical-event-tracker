@@ -29,10 +29,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       firstName: patient.firstName,
       lastName: patient.lastName,
       dateOfBirth: patient.dateOfBirth,
-      height: patient.height || undefined,
-      weight: patient.weight || undefined,
-      emergencyContact: patient.emergencyContact || '',
-      emergencyPhone: patient.emergencyPhone || '',
+      gender: patient.gender,
+      heightCm: patient.heightCm || undefined,
+      weightKg: patient.weightKg || undefined,
       notes: patient.notes || ''
     } : undefined
   });
@@ -170,80 +169,64 @@ export const PatientForm: React.FC<PatientFormProps> = ({
         )}
       </div>
 
+      <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+        <label htmlFor="gender" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+          Gender *
+        </label>
+        <select
+          id="gender"
+          style={inputStyle}
+          {...register('gender')}
+          aria-invalid={!!errors.gender}
+        >
+          <option value="">Select gender</option>
+          <option value="MALE">Male</option>
+          <option value="FEMALE">Female</option>
+          <option value="OTHER">Other</option>
+        </select>
+        {errors.gender && (
+          <div style={errorStyle}>{errors.gender.message}</div>
+        )}
+      </div>
+
       <div style={rowStyle}>
         <div style={halfWidthStyle}>
-          <label htmlFor="height" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+          <label htmlFor="heightCm" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
             Height (cm)
           </label>
           <input
-            id="height"
+            id="heightCm"
             type="number"
             step="0.1"
             min="30"
             max="300"
             style={inputStyle}
             placeholder="Enter height in cm"
-            {...register('height', { valueAsNumber: true })}
-            aria-invalid={!!errors.height}
+            {...register('heightCm', { valueAsNumber: true })}
+            aria-invalid={!!errors.heightCm}
           />
-          {errors.height && (
-            <div style={errorStyle}>{errors.height.message}</div>
+          {errors.heightCm && (
+            <div style={errorStyle}>{errors.heightCm.message}</div>
           )}
         </div>
 
         <div style={halfWidthStyle}>
-          <label htmlFor="weight" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+          <label htmlFor="weightKg" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
             Weight (kg)
           </label>
           <input
-            id="weight"
+            id="weightKg"
             type="number"
             step="0.1"
             min="0.5"
             max="1000"
             style={inputStyle}
             placeholder="Enter weight in kg"
-            {...register('weight', { valueAsNumber: true })}
-            aria-invalid={!!errors.weight}
+            {...register('weightKg', { valueAsNumber: true })}
+            aria-invalid={!!errors.weightKg}
           />
-          {errors.weight && (
-            <div style={errorStyle}>{errors.weight.message}</div>
-          )}
-        </div>
-      </div>
-
-      <div style={rowStyle}>
-        <div style={halfWidthStyle}>
-          <label htmlFor="emergencyContact" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-            Emergency Contact
-          </label>
-          <input
-            id="emergencyContact"
-            type="text"
-            style={inputStyle}
-            placeholder="Emergency contact name"
-            {...register('emergencyContact')}
-            aria-invalid={!!errors.emergencyContact}
-          />
-          {errors.emergencyContact && (
-            <div style={errorStyle}>{errors.emergencyContact.message}</div>
-          )}
-        </div>
-
-        <div style={halfWidthStyle}>
-          <label htmlFor="emergencyPhone" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-            Emergency Phone
-          </label>
-          <input
-            id="emergencyPhone"
-            type="tel"
-            style={inputStyle}
-            placeholder="Emergency contact phone"
-            {...register('emergencyPhone')}
-            aria-invalid={!!errors.emergencyPhone}
-          />
-          {errors.emergencyPhone && (
-            <div style={errorStyle}>{errors.emergencyPhone.message}</div>
+          {errors.weightKg && (
+            <div style={errorStyle}>{errors.weightKg.message}</div>
           )}
         </div>
       </div>

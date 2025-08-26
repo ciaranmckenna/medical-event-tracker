@@ -1,17 +1,15 @@
 import { apiClient } from './apiClient';
-import type { Medication, MedicationDosage, PaginatedResponse } from '../../types/api';
+import type { Medication, MedicationCatalog, MedicationDosage, PaginatedResponse } from '../../types/api';
 import type { MedicationFormData, MedicationDosageFormData } from '../validation/medicationValidation';
 
 export interface MedicationCreateRequest {
-  patientId: string;
   name: string;
-  dosage: number;
-  unit: string;
-  frequency: 'ONCE_DAILY' | 'TWICE_DAILY' | 'THREE_TIMES_DAILY' | 'AS_NEEDED';
-  startDate: string;
-  endDate?: string;
-  active: boolean;
-  notes?: string;
+  genericName?: string;
+  type: 'TABLET' | 'CAPSULE' | 'LIQUID' | 'INJECTION' | 'TOPICAL' | 'INHALER' | 'PATCH' | 'SUPPOSITORY' | 'OTHER';
+  strength?: number;
+  unit?: string;
+  manufacturer?: string;
+  description?: string;
 }
 
 export interface MedicationUpdateRequest extends MedicationCreateRequest {
@@ -48,71 +46,70 @@ export interface MedicationDosageSearchParams {
   administered?: boolean;
 }
 
-// Mock data for testing when backend is not available
-const MOCK_MEDICATIONS: Medication[] = [
+// Mock catalog medications for testing when backend is not available
+const MOCK_CATALOG_MEDICATIONS: MedicationCatalog[] = [
   {
     id: '1',
-    patientId: '1', // John Doe
     name: 'Levetiracetam',
-    dosage: 500,
+    genericName: 'Levetiracetam',
+    type: 'TABLET',
+    strength: 500,
     unit: 'mg',
-    frequency: 'TWICE_DAILY',
-    startDate: '2024-01-01',
-    status: 'ACTIVE',
-    notes: 'Take with food to reduce stomach upset',
+    manufacturer: 'Generic Pharma',
+    description: 'Anti-epileptic medication for seizure control',
+    active: true,
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z'
   },
   {
     id: '2',
-    patientId: '3', // Emma Johnson
     name: 'Lamotrigine',
-    dosage: 100,
+    genericName: 'Lamotrigine',
+    type: 'TABLET',
+    strength: 100,
     unit: 'mg',
-    frequency: 'TWICE_DAILY',
-    startDate: '2024-01-15',
-    status: 'ACTIVE',
-    notes: 'Gradual dose increase as prescribed',
+    manufacturer: 'GlaxoSmithKline',
+    description: 'Mood stabilizer and anti-epileptic medication',
+    active: true,
     createdAt: '2024-01-15T00:00:00Z',
     updatedAt: '2024-01-15T00:00:00Z'
   },
   {
     id: '3',
-    patientId: '2', // Sarah Smith
     name: 'Carbamazepine',
-    dosage: 200,
+    genericName: 'Carbamazepine',
+    type: 'TABLET',
+    strength: 200,
     unit: 'mg',
-    frequency: 'TWICE_DAILY',
-    startDate: '2024-02-01',
-    status: 'ACTIVE',
-    notes: 'Monitor blood levels regularly',
+    manufacturer: 'Novartis',
+    description: 'Anti-epileptic and mood stabilizing medication',
+    active: true,
     createdAt: '2024-02-01T00:00:00Z',
     updatedAt: '2024-02-01T00:00:00Z'
   },
   {
     id: '4',
-    patientId: '1', // John Doe
     name: 'Phenytoin',
-    dosage: 100,
+    genericName: 'Phenytoin',
+    type: 'CAPSULE',
+    strength: 100,
     unit: 'mg',
-    frequency: 'ONCE_DAILY',
-    startDate: '2024-01-01',
-    endDate: '2024-06-01',
-    status: 'INACTIVE',
-    notes: 'Discontinued due to side effects',
+    manufacturer: 'Pfizer',
+    description: 'Anti-epileptic medication (discontinued)',
+    active: false,
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-06-01T00:00:00Z'
   },
   {
     id: '5',
-    patientId: '4', // George Wilson
     name: 'Valproic Acid',
-    dosage: 250,
+    genericName: 'Valproic Acid',
+    type: 'CAPSULE',
+    strength: 250,
     unit: 'mg',
-    frequency: 'TWICE_DAILY',
-    startDate: '2024-03-01',
-    status: 'ACTIVE',
-    notes: 'Senior patient - monitor liver function',
+    manufacturer: 'Abbott',
+    description: 'Anti-epileptic and mood stabilizer',
+    active: true,
     createdAt: '2024-03-01T00:00:00Z',
     updatedAt: '2024-03-01T00:00:00Z'
   }
@@ -121,10 +118,10 @@ const MOCK_MEDICATIONS: Medication[] = [
 export class MedicationService {
   private readonly baseUrl = '/api/medications';
   private readonly dosageUrl = '/api/medication-dosages';
-  private useMockData = true; // Force mock data for frontend development
+  private useMockData = false; // Use real API data
 
   // Medication CRUD operations
-  async getMedications(params: MedicationSearchParams = {}): Promise<PaginatedResponse<Medication>> {
+  async getMedications(params: MedicationSearchParams = {}): Promise<PaginatedResponse<MedicationCatalog>> {
     if (this.useMockData) {
       return this.getMockMedications(params);
     }
@@ -140,7 +137,7 @@ export class MedicationService {
       if (params.frequency) searchParams.append('frequency', params.frequency);
 
       const url = `${this.baseUrl}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
-      return apiClient.get<PaginatedResponse<Medication>>(url);
+      return apiClient.get<PaginatedResponse<MedicationCatalog>>(url);
     } catch (error) {
       console.warn('Medications API failed, switching to mock data:', error);
       this.useMockData = true;
@@ -148,30 +145,30 @@ export class MedicationService {
     }
   }
 
-  async getMedication(id: string): Promise<Medication> {
+  async getMedication(id: string): Promise<MedicationCatalog> {
     if (this.useMockData) {
-      const medication = MOCK_MEDICATIONS.find(med => med.id === id);
+      const medication = MOCK_CATALOG_MEDICATIONS.find(med => med.id === id);
       if (!medication) throw new Error('Medication not found');
       return medication;
     }
     
     try {
-      return apiClient.get<Medication>(`${this.baseUrl}/${id}`);
+      return apiClient.get<MedicationCatalog>(`${this.baseUrl}/${id}`);
     } catch (error) {
       console.warn('Medication API failed, switching to mock data:', error);
       this.useMockData = true;
-      const medication = MOCK_MEDICATIONS.find(med => med.id === id);
+      const medication = MOCK_CATALOG_MEDICATIONS.find(med => med.id === id);
       if (!medication) throw new Error('Medication not found');
       return medication;
     }
   }
 
-  async createMedication(medication: MedicationCreateRequest): Promise<Medication> {
-    return apiClient.post<Medication>(this.baseUrl, medication);
+  async createMedication(medication: MedicationCreateRequest): Promise<MedicationCatalog> {
+    return apiClient.post<MedicationCatalog>(this.baseUrl, medication);
   }
 
-  async updateMedication(id: string, medication: MedicationUpdateRequest): Promise<Medication> {
-    return apiClient.put<Medication>(`${this.baseUrl}/${id}`, medication);
+  async updateMedication(id: string, medication: MedicationUpdateRequest): Promise<MedicationCatalog> {
+    return apiClient.put<MedicationCatalog>(`${this.baseUrl}/${id}`, medication);
   }
 
   async deleteMedication(id: string): Promise<void> {
@@ -179,13 +176,8 @@ export class MedicationService {
   }
 
   // Mock data helper methods
-  private getMockMedications(params: MedicationSearchParams = {}): PaginatedResponse<Medication> {
-    let filteredMedications = [...MOCK_MEDICATIONS];
-    
-    // Apply patient filter
-    if (params.patientId) {
-      filteredMedications = filteredMedications.filter(med => med.patientId === params.patientId);
-    }
+  private getMockMedications(params: MedicationSearchParams = {}): PaginatedResponse<MedicationCatalog> {
+    let filteredMedications = [...MOCK_CATALOG_MEDICATIONS];
     
     // Apply medication name filter
     if (params.medicationName) {
@@ -198,13 +190,8 @@ export class MedicationService {
     // Apply active status filter
     if (params.active !== undefined) {
       filteredMedications = filteredMedications.filter(med => 
-        params.active ? med.status === 'ACTIVE' : med.status !== 'ACTIVE'
+        med.active === params.active
       );
-    }
-    
-    // Apply frequency filter
-    if (params.frequency) {
-      filteredMedications = filteredMedications.filter(med => med.frequency === params.frequency);
     }
     
     // Sort by creation date (newest first)
@@ -270,15 +257,13 @@ export class MedicationService {
   // Helper methods for form transformations
   transformMedicationFormToApiRequest(formData: MedicationFormData): MedicationCreateRequest {
     return {
-      patientId: formData.patientId,
       name: formData.name,
-      dosage: formData.dosage,
-      unit: formData.unit,
-      frequency: formData.frequency,
-      startDate: formData.startDate,
-      endDate: formData.endDate || undefined,
-      active: true,
-      notes: formData.notes || undefined
+      type: formData.type,
+      genericName: formData.genericName || undefined,
+      strength: formData.strength || undefined,
+      unit: formData.unit || undefined,
+      manufacturer: formData.manufacturer || undefined,
+      description: formData.description || undefined
     };
   }
 

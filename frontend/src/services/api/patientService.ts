@@ -6,10 +6,9 @@ export interface PatientCreateRequest {
   firstName: string;
   lastName: string;
   dateOfBirth: string;
-  height?: number;
-  weight?: number;
-  emergencyContact?: string;
-  emergencyPhone?: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  weightKg?: number;
+  heightCm?: number;
   notes?: string;
 }
 
@@ -31,11 +30,15 @@ const MOCK_PATIENTS: Patient[] = [
     id: '1',
     firstName: 'John',
     lastName: 'Doe',
+    fullName: 'John Doe',
     dateOfBirth: '1985-06-15',
-    height: 180,
-    weight: 75,
-    emergencyContact: 'Jane Doe',
-    emergencyPhone: '+1-555-0123',
+    ageInYears: 38,
+    gender: 'MALE',
+    heightCm: 180,
+    weightKg: 75,
+    bmi: 23.1,
+    active: true,
+    activeMedicationCount: 2,
     notes: 'No known allergies',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z'
@@ -44,11 +47,15 @@ const MOCK_PATIENTS: Patient[] = [
     id: '2',
     firstName: 'Sarah',
     lastName: 'Smith',
+    fullName: 'Sarah Smith',
     dateOfBirth: '1992-03-22',
-    height: 165,
-    weight: 60,
-    emergencyContact: 'Michael Smith',
-    emergencyPhone: '+1-555-0456',
+    ageInYears: 31,
+    gender: 'FEMALE',
+    heightCm: 165,
+    weightKg: 60,
+    bmi: 22.0,
+    active: true,
+    activeMedicationCount: 1,
     notes: 'Allergic to penicillin',
     createdAt: '2024-01-02T00:00:00Z',
     updatedAt: '2024-01-02T00:00:00Z'
@@ -57,11 +64,15 @@ const MOCK_PATIENTS: Patient[] = [
     id: '3',
     firstName: 'Emma',
     lastName: 'Johnson',
+    fullName: 'Emma Johnson',
     dateOfBirth: '2010-08-10',
-    height: 140,
-    weight: 35,
-    emergencyContact: 'Robert Johnson',
-    emergencyPhone: '+1-555-0789',
+    ageInYears: 13,
+    gender: 'FEMALE',
+    heightCm: 140,
+    weightKg: 35,
+    bmi: 17.9,
+    active: true,
+    activeMedicationCount: 0,
     notes: 'Child patient, requires parental consent',
     createdAt: '2024-01-03T00:00:00Z',
     updatedAt: '2024-01-03T00:00:00Z'
@@ -70,11 +81,15 @@ const MOCK_PATIENTS: Patient[] = [
     id: '4',
     firstName: 'George',
     lastName: 'Wilson',
+    fullName: 'George Wilson',
     dateOfBirth: '1950-12-05',
-    height: 175,
-    weight: 80,
-    emergencyContact: 'Mary Wilson',
-    emergencyPhone: '+1-555-0321',
+    ageInYears: 73,
+    gender: 'MALE',
+    heightCm: 175,
+    weightKg: 80,
+    bmi: 26.1,
+    active: true,
+    activeMedicationCount: 3,
     notes: 'Senior patient, multiple medications',
     createdAt: '2024-01-04T00:00:00Z',
     updatedAt: '2024-01-04T00:00:00Z'
@@ -83,7 +98,7 @@ const MOCK_PATIENTS: Patient[] = [
 
 export class PatientService {
   private readonly baseUrl = '/api/patients';
-  private useMockData = true; // Force mock data for frontend development
+  private useMockData = false; // Use real API data
 
   // Get all patients with pagination and search
   async getPatients(params: PatientSearchParams = {}): Promise<PaginatedResponse<Patient>> {
@@ -223,10 +238,9 @@ export class PatientService {
       firstName: formData.firstName,
       lastName: formData.lastName,
       dateOfBirth: formData.dateOfBirth,
-      height: formData.height || undefined,
-      weight: formData.weight || undefined,
-      emergencyContact: formData.emergencyContact || undefined,
-      emergencyPhone: formData.emergencyPhone || undefined,
+      gender: formData.gender,
+      weightKg: formData.weightKg || undefined,
+      heightCm: formData.heightCm || undefined,
       notes: formData.notes || undefined
     };
   }
@@ -237,10 +251,9 @@ export class PatientService {
       firstName: patient.firstName,
       lastName: patient.lastName,
       dateOfBirth: patient.dateOfBirth,
-      height: patient.height || undefined,
-      weight: patient.weight || undefined,
-      emergencyContact: patient.emergencyContact || '',
-      emergencyPhone: patient.emergencyPhone || '',
+      gender: patient.gender,
+      weightKg: patient.weightKg || undefined,
+      heightCm: patient.heightCm || undefined,
       notes: patient.notes || ''
     };
   }
