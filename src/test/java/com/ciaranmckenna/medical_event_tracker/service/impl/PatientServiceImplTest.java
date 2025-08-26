@@ -49,8 +49,8 @@ class PatientServiceImplTest {
     void setUp() {
         testUser = new User();
         testUser.setId(UUID.randomUUID());
-        testUser.setUsername("testuser");
-        testUser.setEmail("test@example.com");
+        testUser.setUsername("medicaluser");
+        testUser.setEmail("medicaluser@example.com");
 
         testPatient = new Patient(
             "John",

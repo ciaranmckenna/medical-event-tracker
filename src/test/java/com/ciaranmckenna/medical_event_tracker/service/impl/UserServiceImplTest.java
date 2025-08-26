@@ -48,16 +48,16 @@ class UserServiceImplTest {
         ReflectionTestUtils.setField(userService, "jwtExpirationMs", 86400000L);
         
         registerRequest = new RegisterRequest(
-            "testuser",
-            "test@example.com",
-            "password123",
+            "medicaluser",
+            "medicaluser@example.com",
+            "Password123!",
             "John",
             "Doe"
         );
 
-        loginRequest = new LoginRequest("testuser", "password123");
+        loginRequest = new LoginRequest("medicaluser", "Password123!");
 
-        user = new User("testuser", "test@example.com", "encodedPassword", "John", "Doe");
+        user = new User("medicaluser", "medicaluser@example.com", "encodedPassword", "John", "Doe");
     }
 
     @Test
@@ -71,8 +71,8 @@ class UserServiceImplTest {
         AuthResponse response = userService.registerUser(registerRequest);
 
         assertNotNull(response);
-        assertEquals("testuser", response.username());
-        assertEquals("test@example.com", response.email());
+        assertEquals("medicaluser", response.username());
+        assertEquals("medicaluser@example.com", response.email());
         assertEquals("jwt-token", response.token());
         
         verify(userRepository).save(any(User.class));
@@ -115,7 +115,7 @@ class UserServiceImplTest {
         AuthResponse response = userService.authenticateUser(loginRequest);
 
         assertNotNull(response);
-        assertEquals("testuser", response.username());
+        assertEquals("medicaluser", response.username());
         assertEquals("jwt-token", response.token());
         
         verify(jwtService).generateToken(any(User.class));
@@ -164,18 +164,18 @@ class UserServiceImplTest {
 
     @Test
     void existsByUsername_ReturnsTrue() {
-        when(userRepository.existsByUsername("testuser")).thenReturn(true);
+        when(userRepository.existsByUsername("medicaluser")).thenReturn(true);
 
-        boolean exists = userService.existsByUsername("testuser");
+        boolean exists = userService.existsByUsername("medicaluser");
 
         assertTrue(exists);
     }
 
     @Test
     void existsByEmail_ReturnsTrue() {
-        when(userRepository.existsByEmail("test@example.com")).thenReturn(true);
+        when(userRepository.existsByEmail("medicaluser@example.com")).thenReturn(true);
 
-        boolean exists = userService.existsByEmail("test@example.com");
+        boolean exists = userService.existsByEmail("medicaluser@example.com");
 
         assertTrue(exists);
     }
