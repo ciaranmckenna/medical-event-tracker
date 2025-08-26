@@ -3,7 +3,9 @@ package com.ciaranmckenna.medical_event_tracker.integration;
 import com.ciaranmckenna.medical_event_tracker.dto.CreateMedicalEventRequest;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventCategory;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventSeverity;
+import com.ciaranmckenna.medical_event_tracker.entity.Patient;
 import com.ciaranmckenna.medical_event_tracker.entity.User;
+import com.ciaranmckenna.medical_event_tracker.repository.PatientRepository;
 import com.ciaranmckenna.medical_event_tracker.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -44,20 +47,28 @@ class MedicalEventIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private PatientRepository patientRepository;
+
     private User testUser;
+    private Patient testPatient;
 
     @BeforeEach
     void setUp() {
         // Create and save test user
         testUser = new User();
-        testUser.setUsername("testuser");
-        testUser.setEmail("test@example.com");
-        testUser.setPassword(passwordEncoder.encode("password123"));
+        testUser.setUsername("medicaluser");
+        testUser.setEmail("medicaluser@example.com");
+        testUser.setPassword(passwordEncoder.encode("Password123!"));
         testUser.setFirstName("Test");
         testUser.setLastName("User");
         testUser.setRole(User.Role.PRIMARY_USER);
         testUser.setEnabled(true);
         testUser = userRepository.save(testUser);
+
+        // Create and save test patient
+        testPatient = new Patient("John", "Doe", LocalDate.of(1990, 1, 1), Patient.Gender.MALE, testUser);
+        testPatient = patientRepository.save(testPatient);
 
         // Set up security context
         UsernamePasswordAuthenticationToken authentication = 
@@ -70,7 +81,7 @@ class MedicalEventIntegrationTest {
     void createMedicalEvent_Success() throws Exception {
         // Given
         CreateMedicalEventRequest request = new CreateMedicalEventRequest(
-                UUID.randomUUID(),
+                testPatient.getId(),
                 UUID.randomUUID(),
                 LocalDateTime.now().minusHours(1),
                 "Test Headache",
@@ -95,7 +106,7 @@ class MedicalEventIntegrationTest {
     @Test
     void getMedicalEventsByPatientId_ReturnsEvents() throws Exception {
         // Given
-        UUID patientId = UUID.randomUUID();
+        UUID patientId = testPatient.getId();
 
         // Create an event first
         CreateMedicalEventRequest request = new CreateMedicalEventRequest(
@@ -126,7 +137,7 @@ class MedicalEventIntegrationTest {
     void createMedicalEvent_InvalidData_ReturnsBadRequest() throws Exception {
         // Given - invalid request with null title
         CreateMedicalEventRequest invalidRequest = new CreateMedicalEventRequest(
-                UUID.randomUUID(),
+                testPatient.getId(),
                 null,
                 LocalDateTime.now().minusHours(1),
                 null, // Invalid: null title

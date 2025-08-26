@@ -63,7 +63,7 @@ class AnalyticsIntegrationTest {
         testUser = new User();
         testUser.setUsername("analyticsuser");
         testUser.setEmail("analytics@example.com");
-        testUser.setPassword(passwordEncoder.encode("password123"));
+        testUser.setPassword(passwordEncoder.encode("Password123!"));
         testUser.setFirstName("Analytics");
         testUser.setLastName("User");
         testUser.setRole(User.Role.PRIMARY_USER);
@@ -167,9 +167,9 @@ class AnalyticsIntegrationTest {
         mockMvc.perform(get("/api/analytics/weekly-trends/{patientId}", patientId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
-                .andExpect(jsonPath("$.week_1").exists())
-                .andExpect(jsonPath("$.week_2").exists())
-                .andExpect(jsonPath("$.week_1.patientId").value(patientId.toString()));
+                .andExpect(jsonPath("$['Week 1']").exists())
+                .andExpect(jsonPath("$['Week 2']").exists())
+                .andExpect(jsonPath("$['Week 1'].patientId").value(patientId.toString()));
     }
 
     @Test
