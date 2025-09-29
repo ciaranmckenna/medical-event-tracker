@@ -2,6 +2,10 @@
 
 A Spring Boot application for tracking medical events and medication responses to identify optimal dosage patterns for patients. Designed for parents, medical staff, and carers to monitor and analyze medical incidents in correlation with medication schedules.
 
+## Demo
+
+![Application Demo](src/main/resources/media/your-recording.mov)
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)
