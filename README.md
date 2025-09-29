@@ -2,6 +2,10 @@
 
 A Spring Boot application for tracking medical events and medication responses to identify optimal dosage patterns for patients. Designed for parents, medical staff, and carers to monitor and analyze medical incidents in correlation with medication schedules.
 
+## Demo
+
+![Application Demo](/Users/ciaran/cmkdev/medical-event-tracker/src/test/resources/media/Medical-Events-Tracker-Demo.gif) 
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)
