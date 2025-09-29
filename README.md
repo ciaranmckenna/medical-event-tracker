@@ -4,7 +4,7 @@ A Spring Boot application for tracking medical events and medication responses t
 
 ## Demo
 
-![Application Demo](/Users/ciaran/cmkdev/medical-event-tracker/src/test/resources/media/Medical-Events-Tracker-Demo.gif) 
+![Application Demo](src/main/resources/media/Medical-Events-Tracker-Demo.gif) 
 
 ## 📋 Table of Contents
 
