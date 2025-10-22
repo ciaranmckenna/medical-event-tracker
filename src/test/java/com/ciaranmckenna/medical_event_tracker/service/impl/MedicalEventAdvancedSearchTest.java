@@ -194,20 +194,27 @@ class MedicalEventAdvancedSearchTest {
         // When & Then
         assertThatThrownBy(() -> medicalEventService.searchMedicalEvents(null))
                 .isInstanceOf(InvalidMedicalDataException.class)
-                .hasMessage("Search request and patient ID cannot be null");
+                .hasMessage("Search request cannot be null");
     }
 
     @Test
-    void searchMedicalEvents_ThrowsException_WhenPatientIdIsNull() {
-        // Given
+    void searchMedicalEvents_WorksWithNullPatientId() {
+        // Given - patientId is now optional, should search across all patients
         MedicalEventSearchRequest searchRequest = new MedicalEventSearchRequest(
                 null, "test", null, null, null, null, null, 0, 20, "eventTime", "DESC"
         );
 
-        // When & Then
-        assertThatThrownBy(() -> medicalEventService.searchMedicalEvents(searchRequest))
-                .isInstanceOf(InvalidMedicalDataException.class)
-                .hasMessage("Search request and patient ID cannot be null");
+        Page<MedicalEvent> mockPage = new PageImpl<>(List.of(testEvent1, testEvent2));
+        when(medicalEventRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        // When
+        PagedMedicalEventResponse response = medicalEventService.searchMedicalEvents(searchRequest);
+
+        // Then - should successfully return results across all patients
+        assertThat(response).isNotNull();
+        assertThat(response.content()).hasSize(2);
+        verify(medicalEventRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
