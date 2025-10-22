@@ -27,10 +27,12 @@ public class MedicalEventSpecification {
     public static Specification<MedicalEvent> createSpecification(MedicalEventSearchRequest searchRequest) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            
-            // Patient ID is always required
-            predicates.add(criteriaBuilder.equal(root.get("patientId"), searchRequest.patientId()));
-            
+
+            // Patient ID filter (optional - if null, search all patients)
+            if (searchRequest.patientId() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("patientId"), searchRequest.patientId()));
+            }
+
             // Text search in title and description
             if (searchRequest.searchText() != null && !searchRequest.searchText().trim().isEmpty()) {
                 String searchPattern = "%" + searchRequest.searchText().toLowerCase() + "%";

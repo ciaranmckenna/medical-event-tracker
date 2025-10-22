@@ -5,7 +5,6 @@ import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventSeverity;
 import com.ciaranmckenna.medical_event_tracker.validation.ValidDateRange;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
@@ -19,7 +18,6 @@ import java.util.UUID;
 @ValidDateRange
 public record MedicalEventSearchRequest(
         
-        @NotNull(message = "Patient ID is required for medical event search")
         UUID patientId,
         
         @Size(max = 200, message = "Search text cannot exceed 200 characters")

@@ -36,13 +36,15 @@ export const EventsPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
       return;
     }
     loadInitialData();
-  }, [user, navigate]);
+  }, [user, navigate, refreshTrigger]); // Re-load when refreshTrigger changes
 
   useEffect(() => {
     loadEvents();
