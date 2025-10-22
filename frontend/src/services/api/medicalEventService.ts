@@ -325,9 +325,20 @@ const DEFAULT_MOCK_EVENTS: MedicalEvent[] = [
   }
 ];
 
+// Persist mock data mode across service instances
+const MOCK_MODE_KEY = 'medical-events-mock-mode';
+
+const isMockModeEnabled = (): boolean => {
+  return localStorage.getItem(MOCK_MODE_KEY) === 'true';
+};
+
+const setMockModeEnabled = (enabled: boolean): void => {
+  localStorage.setItem(MOCK_MODE_KEY, enabled.toString());
+};
+
 export class MedicalEventService {
   private readonly baseUrl = '/api/medical-events';
-  private useMockData = false; // Use real API data
+  private useMockData = isMockModeEnabled(); // Restore from localStorage
   private mockEvents: MedicalEvent[] = loadMockEventsFromStorage();
 
   // Get all medical events with pagination and search
@@ -336,24 +347,27 @@ export class MedicalEventService {
       if (this.useMockData) {
         return this.getMockMedicalEvents(params);
       }
-      
-      const searchParams = new URLSearchParams();
-      
-      if (params.patientId) searchParams.append('patientId', params.patientId);
-      if (params.type) searchParams.append('type', params.type);
-      if (params.severity) searchParams.append('severity', params.severity);
-      if (params.status) searchParams.append('status', params.status);
-      if (params.dateFrom) searchParams.append('dateFrom', params.dateFrom);
-      if (params.dateTo) searchParams.append('dateTo', params.dateTo);
-      if (params.searchTerm) searchParams.append('searchTerm', params.searchTerm);
-      if (params.page !== undefined) searchParams.append('page', params.page.toString());
-      if (params.size !== undefined) searchParams.append('size', params.size.toString());
 
-      const url = `${this.baseUrl}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
-      return apiClient.get<PaginatedResponse<MedicalEvent>>(url);
+      // Backend expects POST to /search endpoint with request body
+      const searchRequest = {
+        patientId: params.patientId || null,
+        type: params.type || null,
+        severity: params.severity || null,
+        status: params.status || null,
+        dateFrom: params.dateFrom || null,
+        dateTo: params.dateTo || null,
+        searchTerm: params.searchTerm || null,
+        page: params.page || 0,
+        size: params.size || 20,
+        sortBy: 'eventTime',
+        sortDirection: 'DESC'
+      };
+
+      return apiClient.post<PaginatedResponse<MedicalEvent>>(`${this.baseUrl}/search`, searchRequest);
     } catch (error) {
       console.warn('Medical events API failed, switching to mock data:', error);
       this.useMockData = true;
+      setMockModeEnabled(true);
       return this.getMockMedicalEvents(params);
     }
   }
@@ -370,6 +384,7 @@ export class MedicalEventService {
     } catch (error) {
       console.warn('Medical event API failed, switching to mock data:', error);
       this.useMockData = true;
+      setMockModeEnabled(true);
       const event = this.mockEvents.find(e => e.id === id);
       if (!event) throw new Error('Medical event not found');
       return event;
@@ -405,11 +420,12 @@ export class MedicalEventService {
     } catch (error) {
       console.warn('Create medical event API failed, switching to mock data:', error);
       this.useMockData = true;
+      setMockModeEnabled(true);
       // Generate unique ID to avoid collisions
       const existingIds = this.mockEvents.map(e => parseInt(e.id, 10)).filter(id => !isNaN(id));
       const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
       const newId = (maxId + 1).toString();
-      
+
       const newEvent: MedicalEvent = {
         id: newId,
         ...event,
@@ -443,6 +459,7 @@ export class MedicalEventService {
     } catch (error) {
       console.warn('Update medical event API failed, switching to mock data:', error);
       this.useMockData = true;
+      setMockModeEnabled(true);
       const index = this.mockEvents.findIndex(e => e.id === id);
       if (index === -1) throw new Error('Medical event not found');
       this.mockEvents[index] = {
@@ -469,6 +486,7 @@ export class MedicalEventService {
     } catch (error) {
       console.warn('Delete medical event API failed, switching to mock data:', error);
       this.useMockData = true;
+      setMockModeEnabled(true);
       const index = this.mockEvents.findIndex(e => e.id === id);
       if (index === -1) throw new Error('Medical event not found');
       this.mockEvents.splice(index, 1);

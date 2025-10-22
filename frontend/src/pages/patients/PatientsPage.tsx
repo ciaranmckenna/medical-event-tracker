@@ -13,10 +13,13 @@ export const PatientsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   const handleAddPatient = async (data: PatientFormData) => {
     const patientData = patientService.transformFormToApiRequest(data);
     try {
       await patientService.createPatient(patientData);
+      setRefreshTrigger(prev => prev + 1); // Trigger dashboard refresh
       setViewMode('dashboard');
     } catch (error) {
       throw error; // Let PatientForm handle the error display
@@ -25,13 +28,14 @@ export const PatientsPage: React.FC = () => {
 
   const handleEditPatient = async (data: PatientFormData) => {
     if (!selectedPatient) return;
-    
+
     const patientData = patientService.transformFormToApiRequest(data);
     try {
       await patientService.updatePatient(selectedPatient.id, {
         ...patientData,
         id: selectedPatient.id
       });
+      setRefreshTrigger(prev => prev + 1); // Trigger dashboard refresh
       setViewMode('dashboard');
       setSelectedPatient(null);
     } catch (error) {
@@ -42,7 +46,7 @@ export const PatientsPage: React.FC = () => {
   const handleDeletePatient = async (patient: Patient) => {
     try {
       await patientService.deletePatient(patient.id);
-      // Dashboard will automatically refresh
+      setRefreshTrigger(prev => prev + 1); // Trigger dashboard refresh
     } catch (error: any) {
       setError(`Failed to delete ${patientService.formatPatientName(patient)}. Please try again.`);
     }
@@ -166,6 +170,7 @@ export const PatientsPage: React.FC = () => {
   // Default view is the dashboard
   return (
     <PatientDashboard
+      key={refreshTrigger} // Force re-mount when data changes
       onAddPatient={() => setViewMode('add')}
       onEditPatient={(patient) => {
         setSelectedPatient(patient);

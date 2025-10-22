@@ -134,10 +134,10 @@ public class MedicalEventServiceImpl implements MedicalEventService {
     @Override
     @Transactional(readOnly = true)
     public PagedMedicalEventResponse searchMedicalEvents(MedicalEventSearchRequest searchRequest) {
-        if (searchRequest == null || searchRequest.patientId() == null) {
-            throw new InvalidMedicalDataException("Search request and patient ID cannot be null");
+        if (searchRequest == null) {
+            throw new InvalidMedicalDataException("Search request cannot be null");
         }
-        
+
         if (!searchRequest.isValidDateRange()) {
             throw new InvalidMedicalDataException("Invalid date range: start date must be before or equal to end date");
         }

@@ -80,6 +80,7 @@ spring.log
 *.db
 *.mv.db
 *.trace.db
+data/
 
 # Temporary files
 *.swp
