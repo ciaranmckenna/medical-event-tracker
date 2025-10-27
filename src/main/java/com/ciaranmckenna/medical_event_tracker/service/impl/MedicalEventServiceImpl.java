@@ -252,6 +252,9 @@ public class MedicalEventServiceImpl implements MedicalEventService {
                 event.getDescription(),
                 event.getSeverity(),
                 event.getCategory(),
+                event.getWeightKg(),
+                event.getHeightCm(),
+                event.getDosageGiven(),
                 event.getCreatedAt(),
                 event.getUpdatedAt()
         );

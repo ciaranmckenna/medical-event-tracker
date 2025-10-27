@@ -3,6 +3,7 @@ package com.ciaranmckenna.medical_event_tracker.dto;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventCategory;
 import com.ciaranmckenna.medical_event_tracker.entity.MedicalEventSeverity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -19,6 +20,9 @@ public record MedicalEventResponse(
         String description,
         MedicalEventSeverity severity,
         MedicalEventCategory category,
+        BigDecimal weightKg,
+        BigDecimal heightCm,
+        BigDecimal dosageGiven,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

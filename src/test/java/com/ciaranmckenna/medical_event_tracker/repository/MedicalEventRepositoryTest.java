@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -191,6 +192,10 @@ class MedicalEventRepositoryTest {
         assertThat(count).isEqualTo(2);
     }
 
+    /**
+     * Helper method to create a test MedicalEvent with all required fields.
+     * Sets realistic default medical values for weight, height, and dosage.
+     */
     private MedicalEvent createMedicalEvent(UUID patientId, String title, MedicalEventSeverity severity) {
         MedicalEvent event = new MedicalEvent();
         event.setPatientId(patientId);
@@ -199,6 +204,10 @@ class MedicalEventRepositoryTest {
         event.setDescription("Test description for " + title);
         event.setSeverity(severity);
         event.setCategory(MedicalEventCategory.SYMPTOM);
+        // Set required medical data fields with realistic test values
+        event.setWeightKg(new BigDecimal("70.50")); // Default adult weight
+        event.setHeightCm(new BigDecimal("175.00")); // Default adult height
+        event.setDosageGiven(new BigDecimal("5.00")); // Default medication dosage
         return event;
     }
 }

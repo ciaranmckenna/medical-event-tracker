@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -79,7 +80,7 @@ class MedicalEventIntegrationTest {
 
     @Test
     void createMedicalEvent_Success() throws Exception {
-        // Given
+        // Given - Create medical event request with all required fields
         CreateMedicalEventRequest request = new CreateMedicalEventRequest(
                 testPatient.getId(),
                 UUID.randomUUID(),
@@ -87,7 +88,10 @@ class MedicalEventIntegrationTest {
                 "Test Headache",
                 "Patient reported mild headache after lunch",
                 MedicalEventSeverity.MILD,
-                MedicalEventCategory.SYMPTOM
+                MedicalEventCategory.SYMPTOM,
+                new BigDecimal("70.50"), // weightKg - adult weight
+                new BigDecimal("175.00"), // heightCm - adult height
+                new BigDecimal("5.00") // dosage - 5mg medication
         );
 
         // When/Then
@@ -108,15 +112,18 @@ class MedicalEventIntegrationTest {
         // Given
         UUID patientId = testPatient.getId();
 
-        // Create an event first
+        // Create an event first (no medication, so medicationId is null and dosage is 0)
         CreateMedicalEventRequest request = new CreateMedicalEventRequest(
                 patientId,
-                null,
+                null, // No medication associated with this event
                 LocalDateTime.now().minusHours(2),
                 "Morning Fever",
                 "Patient had elevated temperature",
                 MedicalEventSeverity.MODERATE,
-                MedicalEventCategory.SYMPTOM
+                MedicalEventCategory.SYMPTOM,
+                new BigDecimal("68.00"), // weightKg
+                new BigDecimal("175.00"), // heightCm
+                new BigDecimal("0.00") // dosage - 0 because no medication given
         );
 
         // Create the event
@@ -135,15 +142,18 @@ class MedicalEventIntegrationTest {
 
     @Test
     void createMedicalEvent_InvalidData_ReturnsBadRequest() throws Exception {
-        // Given - invalid request with null title
+        // Given - invalid request with null title (should fail validation)
         CreateMedicalEventRequest invalidRequest = new CreateMedicalEventRequest(
                 testPatient.getId(),
-                null,
+                null, // No medication
                 LocalDateTime.now().minusHours(1),
                 null, // Invalid: null title
                 "Description",
                 MedicalEventSeverity.MILD,
-                MedicalEventCategory.SYMPTOM
+                MedicalEventCategory.SYMPTOM,
+                new BigDecimal("70.50"), // weightKg - valid
+                new BigDecimal("175.00"), // heightCm - valid
+                new BigDecimal("0.00") // dosage - valid (0 for no medication)
         );
 
         // When/Then

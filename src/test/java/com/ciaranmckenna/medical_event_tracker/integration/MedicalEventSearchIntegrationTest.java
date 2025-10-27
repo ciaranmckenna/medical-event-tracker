@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -79,6 +80,7 @@ class MedicalEventSearchIntegrationTest {
         patientId = UUID.randomUUID();
         medicationId = UUID.randomUUID();
 
+        // Create test event 1 - Severe headache with medication
         testEvent1 = new MedicalEvent();
         testEvent1.setPatientId(patientId);
         testEvent1.setMedicationId(medicationId);
@@ -87,8 +89,12 @@ class MedicalEventSearchIntegrationTest {
         testEvent1.setDescription("Patient experienced severe headache after medication");
         testEvent1.setSeverity(MedicalEventSeverity.SEVERE);
         testEvent1.setCategory(MedicalEventCategory.SYMPTOM);
+        testEvent1.setWeightKg(new BigDecimal("72.00")); // Weight at time of event
+        testEvent1.setHeightCm(new BigDecimal("175.00")); // Height
+        testEvent1.setDosageGiven(new BigDecimal("10.00")); // Medication dosage (10mg)
         testEvent1 = medicalEventRepository.save(testEvent1);
 
+        // Create test event 2 - Medication administered, no linked medication ID
         testEvent2 = new MedicalEvent();
         testEvent2.setPatientId(patientId);
         testEvent2.setEventTime(LocalDateTime.now().minusHours(1));
@@ -96,6 +102,9 @@ class MedicalEventSearchIntegrationTest {
         testEvent2.setDescription("Morning dose of prescribed medication taken");
         testEvent2.setSeverity(MedicalEventSeverity.MILD);
         testEvent2.setCategory(MedicalEventCategory.MEDICATION);
+        testEvent2.setWeightKg(new BigDecimal("71.50")); // Weight at time of event
+        testEvent2.setHeightCm(new BigDecimal("175.00")); // Height
+        testEvent2.setDosageGiven(new BigDecimal("5.00")); // Medication dosage (5mg)
         testEvent2 = medicalEventRepository.save(testEvent2);
     }
 

@@ -1,11 +1,9 @@
 package com.ciaranmckenna.medical_event_tracker.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PastOrPresent;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -55,6 +53,26 @@ public class MedicalEvent {
     @Column(name = "category", nullable = false)
     private MedicalEventCategory category;
 
+    @NotNull(message = "Weight is required")
+    @DecimalMin(value = "0.1", message = "Weight must be greater than 0.1 kg")
+    @DecimalMax(value = "1000.0", message = "Weight must be less than 1000 kg")
+    @Digits(integer = 4, fraction = 2, message = "Weight must have at most 4 digits before and 2 digits after decimal point")
+    @Column(name = "weight_kg", nullable = false, precision = 6, scale = 2)
+    private BigDecimal weightKg;
+
+    @DecimalMin(value = "0.1", message = "Height must be greater than 0.1 cm")
+    @DecimalMax(value = "300.0", message = "Height must be less than 300 cm")
+    @Digits(integer = 3, fraction = 2, message = "Height must have at most 3 digits before and 2 digits after decimal point")
+    @Column(name = "height_cm", precision = 5, scale = 2)
+    private BigDecimal heightCm;
+
+    @NotNull(message = "Dosage is required")
+    @DecimalMin(value = "0.0", message = "Dosage cannot be negative")
+    @DecimalMax(value = "10000.0", message = "Dosage must be less than 10000")
+    @Digits(integer = 5, fraction = 2, message = "Dosage must have at most 5 digits before and 2 digits after decimal point")
+    @Column(name = "dosage_given", nullable = false, precision = 7, scale = 2)
+    private BigDecimal dosageGiven;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -76,16 +94,23 @@ public class MedicalEvent {
      * @param description  detailed description of the event
      * @param severity     the severity level of the event
      * @param category     the category of the event
+     * @param weightKg     the patient's weight in kilograms at the time of event
+     * @param heightCm     the patient's height in centimeters at the time of event (optional for patients > 20 years)
+     * @param dosageGiven  the medication dosage given (0 if no medication given)
      */
-    public MedicalEvent(UUID patientId, LocalDateTime eventTime, String title, 
-                       String description, MedicalEventSeverity severity, 
-                       MedicalEventCategory category) {
+    public MedicalEvent(UUID patientId, LocalDateTime eventTime, String title,
+                       String description, MedicalEventSeverity severity,
+                       MedicalEventCategory category, BigDecimal weightKg,
+                       BigDecimal heightCm, BigDecimal dosageGiven) {
         this.patientId = patientId;
         this.eventTime = eventTime;
         this.title = title;
         this.description = description;
         this.severity = severity;
         this.category = category;
+        this.weightKg = weightKg;
+        this.heightCm = heightCm;
+        this.dosageGiven = dosageGiven;
     }
 
     /**
@@ -98,10 +123,14 @@ public class MedicalEvent {
      * @param description  detailed description of the event
      * @param severity     the severity level of the event
      * @param category     the category of the event
+     * @param weightKg     the patient's weight in kilograms at the time of event
+     * @param heightCm     the patient's height in centimeters at the time of event (optional for patients > 20 years)
+     * @param dosageGiven  the medication dosage given (0 if no medication given)
      */
-    public MedicalEvent(UUID patientId, UUID medicationId, LocalDateTime eventTime, 
-                       String title, String description, MedicalEventSeverity severity, 
-                       MedicalEventCategory category) {
+    public MedicalEvent(UUID patientId, UUID medicationId, LocalDateTime eventTime,
+                       String title, String description, MedicalEventSeverity severity,
+                       MedicalEventCategory category, BigDecimal weightKg,
+                       BigDecimal heightCm, BigDecimal dosageGiven) {
         this.patientId = patientId;
         this.medicationId = medicationId;
         this.eventTime = eventTime;
@@ -109,6 +138,9 @@ public class MedicalEvent {
         this.description = description;
         this.severity = severity;
         this.category = category;
+        this.weightKg = weightKg;
+        this.heightCm = heightCm;
+        this.dosageGiven = dosageGiven;
     }
 
     @PrePersist
@@ -163,6 +195,18 @@ public class MedicalEvent {
         return updatedAt;
     }
 
+    public BigDecimal getWeightKg() {
+        return weightKg;
+    }
+
+    public BigDecimal getHeightCm() {
+        return heightCm;
+    }
+
+    public BigDecimal getDosageGiven() {
+        return dosageGiven;
+    }
+
     // Setters
     public void setId(UUID id) {
         this.id = id;
@@ -202,6 +246,18 @@ public class MedicalEvent {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public void setWeightKg(BigDecimal weightKg) {
+        this.weightKg = weightKg;
+    }
+
+    public void setHeightCm(BigDecimal heightCm) {
+        this.heightCm = heightCm;
+    }
+
+    public void setDosageGiven(BigDecimal dosageGiven) {
+        this.dosageGiven = dosageGiven;
     }
 
     @Override
