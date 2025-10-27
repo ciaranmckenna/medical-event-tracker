@@ -10,9 +10,10 @@ import com.ciaranmckenna.medical_event_tracker.service.TimelineService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of TimelineService for timeline analysis.
@@ -56,14 +57,19 @@ public class TimelineServiceImpl implements TimelineService {
         List<MedicalEvent> events = medicalEventRepository.findByPatientIdAndEventTimeBetween(patientId, startDate, endDate);
         
         // Convert events to timeline data points
+        // Each event includes BMI calculation based on weight and height at time of event
         for (MedicalEvent event : events) {
+            // Calculate BMI from event's weight and height data
+            BigDecimal bmi = calculateBMI(event.getWeightKg(), event.getHeightCm());
+
             TimelineDataPoint dataPoint = new TimelineDataPoint(
                     event.getEventTime(),
                     "EVENT",
                     event.getTitle(),
-                    null, // BigDecimal value
-                    null, // String unit
-                    event.getSeverity()
+                    null, // BigDecimal value - not used for events
+                    null, // String unit - not used for events
+                    event.getSeverity(),
+                    bmi   // BMI calculated from event's weight and height
             );
             dataPoints.add(dataPoint);
         }
@@ -72,6 +78,7 @@ public class TimelineServiceImpl implements TimelineService {
         List<MedicationDosage> dosages = medicationDosageRepository.findByPatientIdAndAdministrationTimeBetween(patientId, startDate, endDate);
         
         // Convert dosages to timeline data points
+        // Dosages don't include BMI as they don't have weight/height measurements
         for (MedicationDosage dosage : dosages) {
             TimelineDataPoint dataPoint = new TimelineDataPoint(
                     dosage.getAdministrationTime(),
@@ -79,7 +86,8 @@ public class TimelineServiceImpl implements TimelineService {
                     "Medication Administration",
                     dosage.getDosageAmount(),
                     "mg",
-                    null // MedicalEventSeverity
+                    null, // MedicalEventSeverity - not applicable for dosages
+                    null  // BMI - not applicable for dosages
             );
             dataPoints.add(dataPoint);
         }
@@ -207,17 +215,35 @@ public class TimelineServiceImpl implements TimelineService {
         return properties;
     }
 
+    /**
+     * Creates a TimelineDataPoint from a MedicalEvent.
+     * Calculates BMI from the event's weight and height measurements.
+     *
+     * @param event The medical event to convert
+     * @return TimelineDataPoint with event data and calculated BMI
+     */
     private TimelineDataPoint createEventDataPoint(MedicalEvent event) {
+        // Calculate BMI from event's weight and height at time of occurrence
+        BigDecimal bmi = calculateBMI(event.getWeightKg(), event.getHeightCm());
+
         return new TimelineDataPoint(
                 event.getEventTime(),
                 "EVENT",
                 event.getTitle(),
-                null, // BigDecimal value
-                null, // String unit
-                event.getSeverity()
+                null, // BigDecimal value - not used for events
+                null, // String unit - not used for events
+                event.getSeverity(),
+                bmi   // BMI calculated from event's measurements
         );
     }
 
+    /**
+     * Creates a TimelineDataPoint from a MedicationDosage.
+     * Dosages don't include BMI as they don't have weight/height measurements.
+     *
+     * @param dosage The medication dosage to convert
+     * @return TimelineDataPoint with dosage data
+     */
     private TimelineDataPoint createDosageDataPoint(MedicationDosage dosage) {
         return new TimelineDataPoint(
                 dosage.getAdministrationTime(),
@@ -225,7 +251,65 @@ public class TimelineServiceImpl implements TimelineService {
                 "Medication Administration",
                 dosage.getDosageAmount(),
                 "mg",
-                null // MedicalEventSeverity
+                null, // MedicalEventSeverity - not applicable for dosages
+                null  // BMI - not applicable for dosages
         );
+    }
+
+    /**
+     * Calculates Body Mass Index (BMI) from weight and height measurements.
+     *
+     * BMI Formula: BMI = weight(kg) / (height(m))^2
+     *
+     * This calculation uses the standard medical BMI formula where:
+     * - Weight must be in kilograms (kg)
+     * - Height is converted from centimeters (cm) to meters (m)
+     * - Result is rounded to 1 decimal place for medical accuracy
+     *
+     * Validation:
+     * - Returns null if either weight or height is null (missing data)
+     * - Returns null if weight is <= 0 (invalid measurement)
+     * - Returns null if height is <= 0 (invalid measurement)
+     * - Height must be in a reasonable range (30-300 cm) to avoid calculation errors
+     *
+     * Medical Context:
+     * BMI is calculated at the time of each medical event to track changes over time.
+     * This allows monitoring of weight changes in response to medications or medical conditions.
+     *
+     * @param weightKg The patient's weight in kilograms at time of event
+     * @param heightCm The patient's height in centimeters at time of event
+     * @return The calculated BMI rounded to 1 decimal place, or null if inputs are invalid
+     */
+    private BigDecimal calculateBMI(BigDecimal weightKg, BigDecimal heightCm) {
+        // Return null for missing data - this is expected when weight/height not recorded
+        if (weightKg == null || heightCm == null) {
+            return null;
+        }
+
+        // Validate weight is positive and reasonable
+        if (weightKg.compareTo(BigDecimal.ZERO) <= 0) {
+            return null; // Invalid weight measurement
+        }
+
+        // Validate height is positive and within reasonable medical range (30cm to 300cm)
+        // This prevents calculation errors and ensures data quality
+        if (heightCm.compareTo(BigDecimal.ZERO) <= 0 ||
+            heightCm.compareTo(new BigDecimal("30")) < 0 ||
+            heightCm.compareTo(new BigDecimal("300")) > 0) {
+            return null; // Invalid height measurement
+        }
+
+        // Convert height from centimeters to meters for BMI formula
+        // Divide by 100: e.g., 175cm = 1.75m
+        BigDecimal heightInMeters = heightCm.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
+
+        // Calculate height squared: height(m) * height(m)
+        BigDecimal heightSquared = heightInMeters.multiply(heightInMeters);
+
+        // Calculate BMI: weight(kg) / height²(m)
+        // Round to 1 decimal place for standard medical reporting
+        BigDecimal bmi = weightKg.divide(heightSquared, 1, RoundingMode.HALF_UP);
+
+        return bmi;
     }
 }
