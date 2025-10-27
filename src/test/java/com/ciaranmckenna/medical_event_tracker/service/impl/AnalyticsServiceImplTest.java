@@ -233,11 +233,11 @@ class AnalyticsServiceImplTest {
 
     private TimelineAnalysis createTestTimelineAnalysis(LocalDateTime startDate, LocalDateTime endDate) {
         List<TimelineDataPoint> dataPoints = List.of(
-                new TimelineDataPoint(testTime.minusHours(4), "EVENT", "Mild headache", new BigDecimal("0"), null, MedicalEventSeverity.MILD),
-                new TimelineDataPoint(testTime.minusHours(8), "EVENT", "Nausea", new BigDecimal("0"), null, MedicalEventSeverity.MODERATE),
-                new TimelineDataPoint(testTime.minusHours(6), "DOSAGE", "500mg medication", new BigDecimal("500"), "mg", null),
-                new TimelineDataPoint(testTime.minusHours(12), "DOSAGE", "500mg medication", new BigDecimal("500"), "mg", null),
-                new TimelineDataPoint(testTime.minusHours(18), "DOSAGE", "500mg medication", new BigDecimal("500"), "mg", null)
+                new TimelineDataPoint(testTime.minusHours(4), "EVENT", "Mild headache", new BigDecimal("0"), null, MedicalEventSeverity.MILD, new BigDecimal("23.0")),
+                new TimelineDataPoint(testTime.minusHours(8), "EVENT", "Nausea", new BigDecimal("0"), null, MedicalEventSeverity.MODERATE, new BigDecimal("23.5")),
+                new TimelineDataPoint(testTime.minusHours(6), "DOSAGE", "500mg medication", new BigDecimal("500"), "mg", null, null),
+                new TimelineDataPoint(testTime.minusHours(12), "DOSAGE", "500mg medication", new BigDecimal("500"), "mg", null, null),
+                new TimelineDataPoint(testTime.minusHours(18), "DOSAGE", "500mg medication", new BigDecimal("500"), "mg", null, null)
         );
         
         return new TimelineAnalysis(

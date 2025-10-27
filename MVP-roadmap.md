@@ -95,6 +95,8 @@ Insights and correlation analysis
 
 **Tasks:**
 - ✅ Implement correlation analysis between medications and events
+- Implement correlation between patient height and weight changes and their BMI score
+- Reflect BMI changes with fluctuations on the graph
 - ✅ Create analytics service for data aggregation
 - ✅ Add endpoints for dashboard data
 - ✅ Implement medication impact analysis

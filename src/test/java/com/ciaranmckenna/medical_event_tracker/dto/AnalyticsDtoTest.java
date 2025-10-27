@@ -108,7 +108,8 @@ class AnalyticsDtoTest {
             "Paracetamol 500mg administered",
             new BigDecimal("500.0"),
             "mg",
-            MedicalEventSeverity.MILD
+            MedicalEventSeverity.MILD,
+            null  // BMI not applicable for dosages
         );
         
         // Then
@@ -136,7 +137,8 @@ class AnalyticsDtoTest {
                 "Morning dose",
                 new BigDecimal("500.0"),
                 "mg",
-                MedicalEventSeverity.MILD
+                MedicalEventSeverity.MILD,
+                null  // BMI not applicable for dosages
             ),
             new TimelineDataPoint(
                 LocalDateTime.now(),
@@ -144,7 +146,8 @@ class AnalyticsDtoTest {
                 "Mild headache",
                 null,
                 null,
-                MedicalEventSeverity.MILD
+                MedicalEventSeverity.MILD,
+                new BigDecimal("23.0")  // Sample BMI for event
             )
         );
         
