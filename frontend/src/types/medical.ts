@@ -35,6 +35,10 @@ export interface MedicalEventResponse {
   severity: MedicalEventSeverity;
   eventTime: string;
   medicationId?: string;
+  // Patient measurements at time of event (MVP Stage 3)
+  weightKg: number;
+  heightCm?: number;
+  dosage: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -137,6 +141,10 @@ export interface CreateMedicalEventRequest {
   severity: MedicalEventSeverity;
   eventTime: string;
   medicationId?: string;
+  // Medical measurements required as per MVP Stage 3 requirements
+  weightKg: number;        // Patient weight in kg (always required)
+  heightCm?: number;       // Patient height in cm (optional for patients > 20 years)
+  dosage: number;          // Medication dosage (0 if no medication given)
 }
 
 export interface CreateMedicationDosageRequest {
@@ -207,34 +215,39 @@ export interface MedicalEvent {
   type: EventType;
   title: string;
   description: string;
-  
+
   // Seizure-specific fields
   seizureType?: SeizureType;
   duration?: number; // in seconds
   severity: SeverityLevel;
   status: EventStatus;
-  
+
   // Location and context
   location?: string;
   triggers?: string[];
-  
+
   // Medical response
   medicationGiven?: string;
   dosageGiven?: number;
   emergencyContactCalled?: boolean;
   hospitalRequired?: boolean;
-  
+
+  // Patient measurements at time of event (MVP Stage 3)
+  weightKg?: number;        // Patient weight in kg
+  heightCm?: number;        // Patient height in cm
+  dosage?: number;          // Medication dosage for this event
+
   // Timestamps
   eventTimestamp: string; // When the event occurred
   reportedTimestamp: string; // When it was logged
   resolvedTimestamp?: string; // When it was resolved
-  
+
   // Metadata
   reportedBy: string; // User who reported
   witnessedBy?: string[];
   notes?: string;
   attachments?: string[]; // URLs to images/videos
-  
+
   // System fields
   createdAt: string;
   updatedAt: string;
@@ -268,26 +281,30 @@ export interface MedicalEventFormData {
   type: EventType;
   title: string;
   description: string;
-  
+
   // Seizure-specific
   seizureType?: SeizureType;
   duration?: number;
   severity: SeverityLevel;
-  
+
   // Context
   location?: string;
   triggers?: string;
-  
+
   // Medical response
   medicationGiven?: string;
   dosageGiven?: number;
   emergencyContactCalled?: boolean;
   hospitalRequired?: boolean;
-  
+
   // Timing
   eventDate: string;
   eventTime: string;
-  
+
+  // Patient measurements (MVP Stage 3 requirements)
+  weightKg: number;        // Patient weight at time of event (always required)
+  heightCm?: number;       // Patient height at time of event (optional for patients > 20 years)
+
   // Additional info
   witnessedBy?: string;
   notes?: string;

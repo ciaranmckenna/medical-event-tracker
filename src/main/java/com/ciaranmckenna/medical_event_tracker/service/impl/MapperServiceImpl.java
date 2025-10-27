@@ -33,6 +33,9 @@ public class MapperServiceImpl implements MapperService {
         event.setDescription(inputSanitizer.sanitizeMedicalData(request.description()));
         event.setSeverity(request.severity());
         event.setCategory(request.category());
+        event.setWeightKg(request.weightKg());
+        event.setHeightCm(request.heightCm());
+        event.setDosageGiven(request.dosageGiven());
         return event;
     }
 
@@ -47,6 +50,9 @@ public class MapperServiceImpl implements MapperService {
         event.setDescription(inputSanitizer.sanitizeMedicalData(request.description()));
         event.setSeverity(request.severity());
         event.setCategory(request.category());
+        event.setWeightKg(request.weightKg());
+        event.setHeightCm(request.heightCm());
+        event.setDosageGiven(request.dosageGiven());
         return event;
     }
 
@@ -61,6 +67,9 @@ public class MapperServiceImpl implements MapperService {
                 entity.getDescription(),
                 entity.getSeverity(),
                 entity.getCategory(),
+                entity.getWeightKg(),
+                entity.getHeightCm(),
+                entity.getDosageGiven(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
