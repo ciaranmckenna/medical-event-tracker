@@ -61,7 +61,10 @@ export const MedicalEventForm: React.FC<MedicalEventFormProps> = ({
       eventDate: event.eventTimestamp?.split('T')[0] || '',
       eventTime: event.eventTimestamp?.split('T')[1]?.substring(0, 5) || '',
       witnessedBy: event.witnessedBy?.join(', '),
-      notes: event.notes
+      notes: event.notes,
+      // Patient measurements from existing event (if available)
+      weightKg: (event as any).weightKg || undefined,
+      heightCm: (event as any).heightCm || undefined
     } : {
       patientId: selectedPatientId || '',
       type: emergencyMode ? 'SEIZURE' : 'SYMPTOM',
@@ -69,7 +72,11 @@ export const MedicalEventForm: React.FC<MedicalEventFormProps> = ({
       eventDate: new Date().toISOString().split('T')[0],
       eventTime: new Date().toTimeString().substring(0, 5),
       title: '',
-      description: ''
+      description: '',
+      // Default values for new required fields
+      weightKg: undefined, // User must enter
+      heightCm: undefined, // Optional
+      dosageGiven: 0 // Default to 0 (no medication)
     }
   });
 
@@ -425,6 +432,59 @@ export const MedicalEventForm: React.FC<MedicalEventFormProps> = ({
           </div>
         </div>
 
+        {/* Patient Measurements at Time of Event (MVP Stage 3 Requirements) */}
+        <div style={{
+          backgroundColor: '#f0f9ff',
+          border: '1px solid #bae6fd',
+          borderRadius: '6px',
+          padding: '15px',
+          marginTop: '10px'
+        }}>
+          <div style={{ marginBottom: '10px', fontWeight: '600', color: '#0369a1' }}>
+            📊 Patient Measurements at Time of Event
+          </div>
+          <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '15px' }}>
+            Record patient's current measurements for dosage correlation analysis
+          </div>
+
+          <div style={rowStyle}>
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Patient Weight (kg) *</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                max="1000"
+                {...register('weightKg', { valueAsNumber: true })}
+                style={inputStyle}
+                placeholder="e.g., 70.5"
+              />
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                Weight impacts medication dosage calculations
+              </div>
+              {errors.weightKg && <div style={errorStyle}>{errors.weightKg.message}</div>}
+            </div>
+
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Patient Height (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                max="300"
+                {...register('heightCm', { valueAsNumber: true })}
+                style={inputStyle}
+                placeholder="e.g., 175.0"
+              />
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                Optional for patients over 20 years old
+              </div>
+              {errors.heightCm && <div style={errorStyle}>{errors.heightCm.message}</div>}
+            </div>
+          </div>
+
+        </div>
+
         {/* Additional fields (collapsed in emergency mode) */}
         {!emergencyMode && (
           <>
@@ -468,15 +528,19 @@ export const MedicalEventForm: React.FC<MedicalEventFormProps> = ({
               </div>
 
               <div style={fieldStyle}>
-                <label style={labelStyle}>Dosage Given</label>
+                <label style={labelStyle}>Dosage Given *</label>
                 <input
                   type="number"
                   step="0.1"
-                  min="0.1"
+                  min="0"
+                  max="10000"
                   {...register('dosageGiven', { valueAsNumber: true })}
                   style={inputStyle}
-                  placeholder="e.g., 5.0"
+                  placeholder="Enter 0 if no medication was given"
                 />
+                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                  Enter the dosage amount (use 0 if no medication was given during this event)
+                </div>
                 {errors.dosageGiven && <div style={errorStyle}>{errors.dosageGiven.message}</div>}
               </div>
             </div>

@@ -42,11 +42,28 @@ const durationSchema = z.number()
   .max(86400, 'Duration cannot exceed 24 hours (86400 seconds)')
   .optional();
 
-// Medical dosage validation
-const dosageSchema = z.number()
-  .positive('Dosage must be positive')
-  .max(10000, 'Dosage exceeds maximum safe limit')
+// Medical dosage validation (for dosageGiven - required field, 0 allowed)
+const dosageGivenSchema = z.number({
+  required_error: 'Dosage is required (use 0 if no medication given)',
+  invalid_type_error: 'Dosage must be a number'
+})
+  .min(0, 'Dosage cannot be negative')
+  .max(10000, 'Dosage exceeds maximum safe limit');
+
+// Weight validation (always required per MVP Stage 3)
+const weightSchema = z.number({
+  required_error: 'Patient weight is required',
+  invalid_type_error: 'Weight must be a number'
+})
+  .min(0.1, 'Weight must be at least 0.1 kg')
+  .max(1000, 'Weight cannot exceed 1000 kg');
+
+// Height validation (optional for patients > 20 years per MVP Stage 3)
+const heightSchema = z.number()
+  .min(0.1, 'Height must be at least 0.1 cm')
+  .max(300, 'Height cannot exceed 300 cm')
   .optional();
+
 
 // Medical text validation with sanitization
 const medicalTextSchema = (maxLength: number) => z.string()
@@ -89,8 +106,8 @@ export const medicalEventFormSchema = z.object({
 
   // Medical response fields
   medicationGiven: medicalTextSchema(100).optional(),
-  
-  dosageGiven: dosageSchema,
+
+  dosageGiven: dosageGivenSchema,
 
   emergencyContactCalled: z.boolean().optional(),
   
@@ -112,6 +129,11 @@ export const medicalEventFormSchema = z.object({
   eventTime: z.string()
     .min(1, 'Event time is required')
     .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)'),
+
+  // Patient measurements at time of event (MVP Stage 3 requirements)
+  weightKg: weightSchema,
+
+  heightCm: heightSchema,
 
   // Additional info
   witnessedBy: medicalTextSchema(200).optional(),

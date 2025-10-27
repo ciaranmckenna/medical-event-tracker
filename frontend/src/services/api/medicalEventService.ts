@@ -25,6 +25,9 @@ export interface MedicalEventCreateRequest {
   eventTimestamp: string;
   witnessedBy?: string[];
   notes?: string;
+  // Patient measurements at time of event (MVP Stage 3 requirements)
+  weightKg: number;
+  heightCm?: number;
 }
 
 export interface MedicalEventUpdateRequest extends MedicalEventCreateRequest {
@@ -520,7 +523,7 @@ export class MedicalEventService {
       return timestampString.replace('Z', '');
     };
 
-    // Create backend-compatible request
+    // Create backend-compatible request with MVP Stage 3 requirements
     const backendRequest = {
       patientId: frontendRequest.patientId,
       eventTime: convertToLocalDateTime(frontendRequest.eventTimestamp),
@@ -528,7 +531,11 @@ export class MedicalEventService {
       description: frontendRequest.description || '',
       severity: frontendRequest.severity, // Should match: MILD, MODERATE, SEVERE, CRITICAL
       category: mapEventTypeToCategory(frontendRequest.type),
-      medicationId: frontendRequest.medicationGiven ? undefined : undefined // We don't have medication ID mapping yet
+      medicationId: frontendRequest.medicationGiven ? undefined : undefined, // We don't have medication ID mapping yet
+      // Patient measurements at time of event (MVP Stage 3 requirements)
+      weightKg: frontendRequest.weightKg,
+      heightCm: frontendRequest.heightCm || null, // Optional field
+      dosageGiven: frontendRequest.dosageGiven // Backend expects 'dosageGiven' field name
     };
 
     return backendRequest;
@@ -538,7 +545,7 @@ export class MedicalEventService {
   transformFormToApiRequest(formData: MedicalEventFormData): MedicalEventCreateRequest {
     // Combine date and time
     const eventTimestamp = `${formData.eventDate}T${formData.eventTime}:00Z`;
-    
+
     return {
       patientId: formData.patientId,
       type: formData.type,
@@ -549,8 +556,8 @@ export class MedicalEventService {
       severity: formData.severity,
       location: formData.location,
       triggers: formData.triggers ? (
-        Array.isArray(formData.triggers) 
-          ? formData.triggers 
+        Array.isArray(formData.triggers)
+          ? formData.triggers
           : formData.triggers.split(',').map(t => t.trim()).filter(Boolean)
       ) : undefined,
       medicationGiven: formData.medicationGiven,
@@ -563,7 +570,10 @@ export class MedicalEventService {
           ? formData.witnessedBy
           : formData.witnessedBy.split(',').map(w => w.trim()).filter(Boolean)
       ) : undefined,
-      notes: formData.notes
+      notes: formData.notes,
+      // Patient measurements at time of event (MVP Stage 3 requirements)
+      weightKg: formData.weightKg,
+      heightCm: formData.heightCm
     };
   }
 

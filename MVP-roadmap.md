@@ -56,6 +56,9 @@ Core functionality for recording and managing medical incidents
 - Implement medication dosage tracking services
 - Create dosage recording endpoints (AM/PM tracking)
 - Link events to patients and medications
+- User should enter the patient's height in centimeters and weight in kilograms each time they log a medical event as this can have an impact on dosage and medical events
+- User does not need to enter the patient's height if they are older than 20 years old. Generally increases in height have stopped by this stage. 
+- If there is no medication given then the dosage of 0 is appropriate.
 
 **Deliverables:**
 - Record medical events with timestamps

@@ -20,6 +20,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -58,6 +59,7 @@ class MedicalEventControllerTest {
         patientId = UUID.randomUUID();
         medicationId = UUID.randomUUID();
         
+        // Set up test MedicalEvent entity with realistic medical data
         testEvent = new MedicalEvent();
         testEvent.setId(UUID.randomUUID());
         testEvent.setPatientId(patientId);
@@ -67,9 +69,13 @@ class MedicalEventControllerTest {
         testEvent.setDescription("Patient experienced elevated temperature");
         testEvent.setSeverity(MedicalEventSeverity.MODERATE);
         testEvent.setCategory(MedicalEventCategory.SYMPTOM);
+        testEvent.setWeightKg(new BigDecimal("70.50")); // Adult weight in kg
+        testEvent.setHeightCm(new BigDecimal("175.00")); // Adult height in cm
+        testEvent.setDosageGiven(new BigDecimal("5.00")); // Medication dosage (5mg)
         testEvent.setCreatedAt(LocalDateTime.now().minusHours(1));
         testEvent.setUpdatedAt(LocalDateTime.now().minusMinutes(30));
 
+        // Create test request with all required fields including weight, height, and dosage
         createRequest = new CreateMedicalEventRequest(
                 patientId,
                 medicationId,
@@ -77,9 +83,13 @@ class MedicalEventControllerTest {
                 testEvent.getTitle(),
                 testEvent.getDescription(),
                 testEvent.getSeverity(),
-                testEvent.getCategory()
+                testEvent.getCategory(),
+                new BigDecimal("70.50"), // weightKg
+                new BigDecimal("175.00"), // heightCm
+                new BigDecimal("5.00") // dosage
         );
 
+        // Create update request with all required fields including weight, height, and dosage
         updateRequest = new UpdateMedicalEventRequest(
                 testEvent.getId(),
                 patientId,
@@ -88,7 +98,10 @@ class MedicalEventControllerTest {
                 "Updated Title",
                 "Updated description",
                 MedicalEventSeverity.SEVERE,
-                MedicalEventCategory.EMERGENCY
+                MedicalEventCategory.EMERGENCY,
+                new BigDecimal("72.00"), // Updated weightKg
+                new BigDecimal("175.00"), // heightCm (unchanged)
+                new BigDecimal("7.50") // Updated dosage
         );
     }
 
@@ -116,10 +129,18 @@ class MedicalEventControllerTest {
     @Test
     @WithMockUser(roles = "PRIMARY_USER")
     void createMedicalEvent_InvalidInput_ReturnsBadRequest() throws Exception {
-        // Given - invalid request with null title
+        // Given - invalid request with null title (should fail validation)
         CreateMedicalEventRequest invalidRequest = new CreateMedicalEventRequest(
-                patientId, medicationId, LocalDateTime.now(), null, "desc", 
-                MedicalEventSeverity.MILD, MedicalEventCategory.SYMPTOM
+                patientId,
+                medicationId,
+                LocalDateTime.now(),
+                null, // Invalid: title is null
+                "desc",
+                MedicalEventSeverity.MILD,
+                MedicalEventCategory.SYMPTOM,
+                new BigDecimal("70.50"), // weightKg - valid
+                new BigDecimal("175.00"), // heightCm - valid
+                new BigDecimal("5.00") // dosage - valid
         );
 
         // When/Then

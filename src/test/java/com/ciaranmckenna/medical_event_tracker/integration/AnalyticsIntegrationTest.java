@@ -228,6 +228,9 @@ class AnalyticsIntegrationTest {
         symptomEvent.setDescription("Patient reported mild headache 2 hours after morning medication");
         symptomEvent.setSeverity(MedicalEventSeverity.MILD);
         symptomEvent.setCategory(MedicalEventCategory.SYMPTOM);
+        symptomEvent.setWeightKg(new BigDecimal("70.50"));
+        symptomEvent.setHeightCm(new BigDecimal("175.00"));
+        symptomEvent.setDosageGiven(new BigDecimal("5.00"));
         medicalEventRepository.save(symptomEvent);
 
         // Create adverse reaction - 10 hours ago (after dosage 2)
@@ -239,6 +242,9 @@ class AnalyticsIntegrationTest {
         adverseEvent.setDescription("Patient experienced nausea 2 hours after evening medication");
         adverseEvent.setSeverity(MedicalEventSeverity.MODERATE);
         adverseEvent.setCategory(MedicalEventCategory.ADVERSE_REACTION);
+        adverseEvent.setWeightKg(new BigDecimal("70.00"));
+        adverseEvent.setHeightCm(new BigDecimal("175.00"));
+        adverseEvent.setDosageGiven(new BigDecimal("7.50"));
         medicalEventRepository.save(adverseEvent);
 
         // Create observation - 16 hours ago (after dosage 3)
@@ -249,6 +255,9 @@ class AnalyticsIntegrationTest {
         observationEvent.setDescription("Patient showed improved mood and energy levels");
         observationEvent.setSeverity(MedicalEventSeverity.MILD);
         observationEvent.setCategory(MedicalEventCategory.OBSERVATION);
+        observationEvent.setWeightKg(new BigDecimal("71.00"));
+        observationEvent.setHeightCm(new BigDecimal("175.00"));
+        observationEvent.setDosageGiven(new BigDecimal("0.00")); // No medication for observation
         medicalEventRepository.save(observationEvent);
 
         // Create emergency event - 2 days ago (unrelated to current medication)
@@ -259,6 +268,9 @@ class AnalyticsIntegrationTest {
         emergencyEvent.setDescription("Patient had severe allergic reaction requiring immediate attention");
         emergencyEvent.setSeverity(MedicalEventSeverity.CRITICAL);
         emergencyEvent.setCategory(MedicalEventCategory.EMERGENCY);
+        emergencyEvent.setWeightKg(new BigDecimal("69.50"));
+        emergencyEvent.setHeightCm(new BigDecimal("175.00"));
+        emergencyEvent.setDosageGiven(new BigDecimal("0.00")); // No medication during emergency
         medicalEventRepository.save(emergencyEvent);
     }
 }
